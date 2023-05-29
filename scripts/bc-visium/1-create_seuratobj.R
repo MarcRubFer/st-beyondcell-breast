@@ -4,7 +4,7 @@ rm(list = ls())
 library("Seurat")
 
 out.dir <- "./results"
-dir.create(path = out.dir)
+dir.create(path = out.dir, recursive = TRUE)
 
 # Load data matrix
 mtx <- Read10X(data.dir = "./data/section1/raw_feature_bc_matrix/", gene.column = 2)
