@@ -4,7 +4,7 @@ rm(list = ls())
 library("Seurat")
 
 out.dir <- "./results"
-dir.create(path = out.dir, recursive = TRUE)
+dir.create(path = out.dir, recursive = TRUE, showWarnings = FALSE)
 
 # Load data matrix
 mtx.ref <- Read10X(data.dir = "./data/reference/BrCa_Atlas_Count_out/")
@@ -28,8 +28,13 @@ seuratobj.reference <- CreateSeuratObject(counts = mtx.ref,
                                           meta.data = meta.ref,
                                           project = "Single-cell")
 
+# Only HER2+ patients
+seuratobj.refHER2 <- subset(seuratobj.reference, 
+                            subset = (subtype == "HER2+"))
+seuratobj.refHER2
 
 
 # Save seuratobj as R object
 dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
 saveRDS(seuratobj.reference, file = "./results/analysis/seuratobj.reference.rds")
+saveRDS(seuratobj.refHER2, file = "./results/analysis/seuratobj.refHER2.rds")
