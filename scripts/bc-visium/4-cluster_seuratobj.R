@@ -21,9 +21,9 @@ seuratobj.clusters <- FindNeighbors(seuratobj.phase,
                                     reduction = "pca", 
                                     dims = 1:20, 
                                     k.param = 20)
-
+res <- c(0.1,0.2,0.3,0.4,0.5)
 seuratobj.clusters <- FindClusters(seuratobj.clusters, 
-                                   resolution = 0.1, 
+                                   resolution = res, 
                                    verbose = FALSE)
 
 # Run UMAP
