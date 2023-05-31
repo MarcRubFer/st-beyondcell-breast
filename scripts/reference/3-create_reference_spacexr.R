@@ -10,6 +10,7 @@ rm(list = ls())
 library("spacexr")
 library("Seurat")
 library("tidyverse")
+library("patchwork")
 
 # Load seurat object
 seuratobj.refHER2.filtered <- readRDS(file = "./results/analysis/seuratobj.refHER2.filtered.rds")
@@ -20,6 +21,7 @@ levels(factor(seuratobj.refHER2.filtered$celltype_major))
 
 counts <- seuratobj.refHER2.filtered@assays$RNA@counts
 dim(counts)
+head(colnames(counts))
 head(rownames(counts))
 
 cell.types <- seuratobj.refHER2.filtered@meta.data %>%
@@ -30,38 +32,28 @@ cell.types <- seuratobj.refHER2.filtered@meta.data %>%
 reference <- Reference(counts, cell.types, n_max_cells = 1500)
 
 ## Examine reference object (optional)
-print(dim(reference@counts)) #observe Digital Gene Expression matrix
+dim(reference@counts) #observe Digital Gene Expression matrix
 table(reference@cell_types) #number of occurences for each cell type
 
+names(reference@cell_types)
+reference
 
 
-ncells <- seuratobj.refHER2.filtered@meta.data %>%
-  count(celltype_major) %>%
-  ggplot(aes(x = celltype_major, y = n, fill = celltype_major)) +
-  geom_bar(stat = "identity") +
-  geom_text(aes(label = n), vjust = -0.5) +
-  ggtitle(paste("Cell types in HER2+ patients")) +
-  xlab(NULL) +
-  ylab("N") +
+d <- as.data.frame(reference@cell_types)
+colnames(d) <- c("cell_types")
+names(d)
+patientid <- gsub(pattern = "_.*", replacement = "", names(reference@cell_types))
+d$patientid <- patientid
+
+ncells_patients <- ggplot(data = d, aes(x=patientid)) +
+  geom_bar(aes(fill = cell_types)) +
+  ggtitle(paste("Number of cell types / Distribution by patients")) +
   theme_minimal() +
-  theme(legend.position = "none")
-ncells
+  theme(axis.title.x = element_blank())
 
-ncells.patients <- seuratobj.refHER2.filtered@meta.data %>%
-  count(Patient, celltype_major) %>%
-  ggplot(aes(x = celltype_major, y = n, fill = Patient)) +
-  geom_bar(stat = "identity", position = position_dodge(preserve = "single")) +
-  ggtitle(paste("Cell types by patients")) +
-  xlab(NULL) +
-  ylab("N") +
-  theme_minimal()
-ncells.patients
+dir.create(path = "./results/plots")
+ggsave(filename = "reference.ncells_by_patients.pdf", plot = ncells_patients, path = "./results/plots/")
 
-table(as.data.frame(reference@cell_types))
 
-a <- c("CID4066_GACGTTATCTCGGACG", "CID3921_CCACGGAGTTGTTTGG")
-str_split(a, pattern = "_")[[1]]
-
-gsub(pattern = "_*", replacement = "", names(reference@nUMI))
 # Save data
 saveRDS(reference, file = "./results/analysis/spacexr.reference.rds")
