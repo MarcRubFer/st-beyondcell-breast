@@ -22,4 +22,5 @@ It is recommended to use conda enviroments located in envs directory
 - RStudio: version 2022.07.1 Build 554
 - Seurat: version 4.3.0
 - spacexr: version 2.2.1
+- clustree: version 0.5.0
 - Beyondcell: version 2.1.0
