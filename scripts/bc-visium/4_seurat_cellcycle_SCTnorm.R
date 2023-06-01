@@ -18,7 +18,7 @@ CellCyclebyIdent <- function(x, split, ident = "Phase") {
 }
 
 # Load RDS
-seuratobj.filtered <- readRDS(file = "./results/analysis/seuratobj.filtered.rds")
+seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvoluted.rds")
 
 # Perform SCT normalization without cell cycle regression.
 # return.only.var.genes = FALSE: Output the resulting scaled matrix with all genes.
@@ -26,7 +26,7 @@ seuratobj.filtered <- readRDS(file = "./results/analysis/seuratobj.filtered.rds"
 # variable.features.rv.th = 1.1: Use the genes with 
 # a residual variance > 1.1
 
-seuratobj.filtered <- SCTransform(seuratobj.filtered, 
+seuratobj.deconvoluted <- SCTransform(seuratobj.deconvoluted, 
                                   assay = "Spatial", 
                                   return.only.var.genes = FALSE, 
                                   variable.features.n = NULL, 
@@ -35,7 +35,7 @@ seuratobj.filtered <- SCTransform(seuratobj.filtered,
 # Cell cycle effect
 g2m.genes <- cc.genes$g2m.genes
 s.genes <- cc.genes$s.genes
-seuratobj.phase <- CellCycleScoring(seuratobj.filtered, 
+seuratobj.phase <- CellCycleScoring(seuratobj.deconvoluted, 
                                     g2m.features = g2m.genes, 
                                     s.features = s.genes, 
                                     assay = "SCT")
@@ -58,7 +58,13 @@ cell.cycle.slide.without <- CellCyclebyIdent(seuratobj.phase,
 patch.cell.cycle <- (cell.cycle.without | cell.cycle.phase.without) & 
   theme(legend.position = "bottom")
 patch.cell.cycle <- patch.cell.cycle + plot_layout(guides = "collect")
+patch.cell.cycle
+
+ggsave(filename = "cell_cycle_withoutregress.png", 
+       plot = patch.cell.cycle, 
+       path = "./results/plots/")
 
 # Save Data
 saveRDS(seuratobj.phase, file = paste0(out.dir,"/analysis/seuratobj.phase.rds"))
-
+all.plots <- list(cell.cycle.without, cell.cycle.phase.without, cell.cycle.phase.without)
+save(all.plots, file = paste0("./results/ggplots/cell_cycle.RData"))
