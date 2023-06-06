@@ -48,7 +48,7 @@ dir.create(path = paste0(out.dir,"/analysis/section1"), recursive = TRUE)
 saveRDS(seuratobj.s1, file = paste0(out.dir,"/analysis/section1/seuratobj.s1.raw.rds"))
 
 dir.create(path = paste0(out.dir,"/analysis/section2"), recursive = TRUE)
-saveRDS(seuratobj.s2, file = paste0(out.dir,"/analysis/section1/seuratobj.s2.raw.rds"))
+saveRDS(seuratobj.s2, file = paste0(out.dir,"/analysis/section2/seuratobj.s2.raw.rds"))
 
 dir.create(path = paste0(out.dir,"/analysis/merged"), recursive = TRUE)
-saveRDS(seuratobj.merged, file = paste0(out.dir,"/analysis/section1/seuratobj.merged.raw.rds"))
+saveRDS(seuratobj.merged, file = paste0(out.dir,"/analysis/merged/seuratobj.merged.raw.rds"))
