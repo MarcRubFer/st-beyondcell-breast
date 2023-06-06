@@ -1,4 +1,4 @@
-# conda activate beyondcell
+# conda activate spacexr
 rm(list = ls())
 
 library("Seurat")
@@ -35,6 +35,6 @@ seuratobj.refHER2
 
 
 # Save seuratobj as R object
-dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
-saveRDS(seuratobj.reference, file = "./results/analysis/seuratobj.reference.rds")
-saveRDS(seuratobj.refHER2, file = "./results/analysis/seuratobj.refHER2.rds")
+dir.create(path = paste0(out.dir,"/analysis/reference"), recursive = TRUE)
+saveRDS(seuratobj.reference, file = "./results/analysis/reference/seuratobj.reference.rds")
+saveRDS(seuratobj.refHER2, file = "./results/analysis/reference/seuratobj.refHER2.rds")

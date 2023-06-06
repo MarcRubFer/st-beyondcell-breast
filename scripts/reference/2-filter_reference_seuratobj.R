@@ -22,14 +22,14 @@ customVln <- function(x, features) {
 }
 
 #Load RDS
-seuratobj.refHER2 <- readRDS(file = "./results/analysis/seuratobj.refHER2.rds")
+seuratobj.refHER2 <- readRDS(file = "./results/analysis/reference/seuratobj.refHER2.rds")
 head(seuratobj.refHER2@meta.data)
 
 # Create metadata %Ribosomal (mitochondrial is already made)
 seuratobj.refHER2[["Percent_ribo"]] <- 
   PercentageFeatureSet(object = seuratobj.refHER2, pattern = "^RP[SL][[:digit:]]")
 seuratobj.refHER2@meta.data <- seuratobj.refHER2@meta.data %>%
-  mutate(percent.rb = if_else(is.na(percent.rb), 0, percent.rb))
+  mutate(Percent_ribo = if_else(is.na(Percent_ribo), 0, Percent_ribo))
 head(seuratobj.refHER2@meta.data)
 
 # ViolinPlots before spot filtering
@@ -46,7 +46,7 @@ vln.feat.before <- customVln(seuratobj.refHER2, features = "nFeature_RNA") +
 pre.violin <- (vln.mt.before | vln.rb.before) / (vln.count.before | vln.feat.before) 
 pre.violin <- pre.violin & theme(legend.position = "bottom") 
 pre.violin <- pre.violin + plot_layout(guides = "collect")
-pre.violin + 
+pre.violin <- pre.violin + 
   plot_annotation(
     title = "Prefiltered QC parameters",
     theme = theme(plot.title = element_text(size = 18, face = "bold"))
@@ -70,25 +70,45 @@ seuratobj.refHER2.filtered <- subset(seuratobj.refHER2,
 dim(seuratobj.refHER2)
 dim(seuratobj.refHER2.filtered)
 
-# VlnPlots after spot filtering
+# VlnPlots after spot filtering. Y limits adjust to pre-filtered
+
 Idents(seuratobj.refHER2.filtered) <- "celltype_major"
 vln.mt.after <- customVln(seuratobj.refHER2.filtered, features = "Percent_mito") + 
+  ylim(0,20) +
   ggtitle("Mit Filtered")
 vln.rb.after <- customVln(seuratobj.refHER2.filtered, features = "Percent_ribo") +
+  ylim(0,60) +
   ggtitle("Rb Filtered")
 vln.count.after <- customVln(seuratobj.refHER2.filtered, features = "nCount_RNA") +
+  ylim(0, 150000) +
   ggtitle("Count Filtered")
 vln.feat.after <- customVln(seuratobj.refHER2.filtered, features = "nFeature_RNA") +
+  ylim(0, 10000) +
   ggtitle("Feat Filtered")
 
 post.violin <- (vln.mt.after | vln.rb.after ) / (vln.count.after | vln.feat.after) & theme(legend.position = "bottom")
 post.violin <- post.violin + plot_layout(guides = "collect")
-post.violin + 
+post.violin <- post.violin + 
   plot_annotation(
     title = "Postfiltered QC parameters",
     theme = theme(plot.title = element_text(size = 18, face = "bold"))
   )
+post.violin
+
+# Save plots and ggplots
+dir.create(path = paste0(out.dir,"/plots/reference"), recursive = TRUE)
+ggsave(filename = "Violin.plots_prefiltered.reference.png", 
+       plot = pre.violin, 
+       path = paste0(out.dir,"/plots/reference"))
+ggsave(filename = "Violin.plots_postfiltered.reference.png", 
+       plot = post.violin, 
+       path = paste0(out.dir,"/plots/reference"))
+
+dir.create(path = paste0(out.dir,"/ggplots/reference"), recursive = TRUE)
+all.plots <- list(pre.violin, post.violin)
+save(all.plots, file = paste0("./results/ggplots/reference/filter_plots.RData"))
 
 # Save data
-dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
-saveRDS(seuratobj.refHER2.filtered, file = "./results/analysis/seuratobj.refHER2.filtered.rds")
+dir.create(path = paste0(out.dir,"/analysis/reference"), recursive = TRUE)
+saveRDS(seuratobj.refHER2.filtered, 
+        file = "./results/analysis/reference/seuratobj.refHER2.filtered.rds")
