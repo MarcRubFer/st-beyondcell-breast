@@ -72,7 +72,7 @@ pre.spatial
 # >0, depends on status 200-500) and nFeature(always >0, depends on status
 # 100-200)
 seuratobj.filtered <- subset(seuratobj.merged, subset = percent.mt < 15 & nCount_Spatial > 500 & nFeature_Spatial > 200)
-dim(seuratobj)
+dim(seuratobj.merged)
 dim(seuratobj.filtered)
 
 # VlnPlots after spot filtering
