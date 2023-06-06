@@ -55,7 +55,6 @@ ncells_patients <- ggplot(data = df.celltypes, aes(x=patientid)) +
   geom_bar(aes(fill = cell_types), colour = "#333333") +
   ggtitle(paste("Number of cell types / Distribution by patients")) +
   scale_fill_igv() +
-  theme_minimal() +
   theme(axis.title.x = element_blank())
 
 ncells_patients_wrap <- ggplot(data = as.data.frame(table(df.celltypes)), 
