@@ -6,6 +6,9 @@ library("patchwork")
 library("clustree")
 library("tidygraph")
 
+out.dir <- "./results"
+dir.create(path = out.dir, recursive = TRUE)
+
 # Load RDS
 
 seuratobj.phase <- readRDS(file = "./results/analysis/seuratobj.phase.rds")
@@ -18,55 +21,67 @@ elbow <- ElbowPlot(seuratobj.phase,
 elbow
 #ggsave(elbow, filename = paste0(out.dir, "/plots/elbow.pdf")) 
 
-# Clustering
+# Selection of kNN at different resolution levels
+
+k.param <- c(10,20,30,40,50,60,70)
+l <- lapply(X = k.param, FUN = function(x){
+  res <- c(0.1,0.2,0.3,0.4,0.5)
+  a <- FindNeighbors(seuratobj.phase, 
+                     reduction = "pca", 
+                     dims = 1:20, 
+                     k.param = x)
+  a <- FindClusters(a, 
+                    resolution = res, 
+                    verbose = FALSE)
+  # Run UMAP
+  a <- RunUMAP(a, 
+               reduction = "pca", 
+               dims = 1:20, 
+               n.components = 2)
+  clustree.graph <- clustree(a, 
+                             prefix = "SCT_snn_res.",
+                             prop_filter = 0.1, 
+                             node_colour = "sc3_stability",
+                             return = "graph")
+  max.stability <- clustree.graph %>%
+    activate(nodes) %>%
+    as.data.frame() %>%
+    group_by(SCT_snn_res.) %>%
+    summarise(median.stability = median(sc3_stability),
+              n.clusters = length(unique(cluster))) %>%
+    mutate(k.param = x)
+  return(max.stability)
+})
+
+l <- l %>%
+  bind_rows() %>%
+  mutate(k.param = as.factor(k.param))
+
+clustersc3.kparam <- ggplot(data=l, aes(x=SCT_snn_res., y=median.stability, group = k.param, color = k.param)) + 
+  geom_line()+
+  geom_point() +
+  labs(x = "Resolution",
+       y = "Median of SC3 stability")
+
+
+# Recompute Clustering at selected K.param
+# (in this case k.param = 50)
 seuratobj.clusters <- FindNeighbors(seuratobj.phase, 
                                     reduction = "pca", 
                                     dims = 1:20, 
-                                    k.param = 20)
+                                    k.param = 50)
 res <- c(0.1,0.2,0.3,0.4,0.5)
 seuratobj.clusters <- FindClusters(seuratobj.clusters, 
                                    resolution = res, 
                                    verbose = FALSE)
 
-# Run UMAP
+# ReRun UMAP
 seuratobj.clusters <- RunUMAP(seuratobj.clusters, 
                               reduction = "pca", 
                               dims = 1:20, 
                               n.components = 2)
-
-umap.plot <- DimPlot(seuratobj.clusters)
-spatial.plot <- SpatialDimPlot(seuratobj.clusters, group = "ident")
-
-(umap.plot | spatial.plot)
-head(seuratobj.clusters@meta.data$seurat_clusters)
-# Plot clusters
-#  for (r in res) {
-#    Idents(seuratobj.clusters) <- paste0("SCT_snn_res.", r)
-#    umap.plot <- DimPlot(seuratobj.clusters, group.by = c("ident", "Phase"))
-#    spatial.plot <- SpatialDimPlot(seuratobj.clusters, group = "ident")[[1]]
-#    spatial.plot.splitted <- SpatialDimPlotSplitted(seuratobj.clusters)
-#    ggsave(umap.plot, width = 14, 
-#           filename = paste0(out.dir, "/plots/", r, 
-#                             "/expression_clusters_umap_phase.png"))
-#    ggsave(spatial.plot,
-#           filename = paste0(out.dir, "/plots/", r, 
-#                             "/expression_clusters_spatial.png"))
-#    ggsave(spatial.plot.splitted, width = 17, height = 10, 
-#           filename = paste0(out.dir, "/plots/", r,
-#                             "/expression_clusters_spatial_splitted.png"))
-#    # Save plots
-#    all.plots <- list(elbow, umap.plot, spatial.plot, spatial.plot.splitted)
-#    save(all.plots, file = paste0(out.dir, "/ggplots/", r, 
-#                                  "/seurat_clusters.RData"))
-#  }
-
-SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2"))
-
-SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2")) / 
-  (umap.plot | spatial.plot)
-
-# Clustree: selection of resolution
-
+  
+# Clustree plots
 clustree.plot <- clustree(seuratobj.clusters, 
                           prefix = "SCT_snn_res.",
                           node_colour = "sc3_stability") 
@@ -76,6 +91,7 @@ clustree.graph <- clustree(seuratobj.clusters,
                            prop_filter = 0.1, 
                            node_colour = "sc3_stability",
                            return = "graph")
+
 max.stability <- clustree.graph %>%
   activate(nodes) %>%
   as.data.frame() %>%
@@ -89,23 +105,68 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=SCT_snn_res., y=median.st
   labs(x = "Resolution",
        y = "Median of SC3 stability")
 
-(clustree.plot | max.stability.plot)
-max.stability + max.stability.plot
+clustree.analysis <- (clustree.plot | max.stability.plot)
 
 # Boxplot by cluster, celltypes proportion
 
 cell.types <- names(seuratobj.clusters@meta.data)[6:14]
-d <- seuratobj.clusters@meta.data[6:14]
-d$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.2
-d$cluster <- as.factor(d$cluster)
+df.celltypes.clusters <- seuratobj.clusters@meta.data[6:14]
+df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.2
+df.celltypes.clusters$cluster <- as.factor(df.celltypes.clusters$cluster)
 
-d <- as.data.frame(d)
-d.pivot <- pivot_longer(d, cols = -cluster, names_to = "cell.type", values_to = "cell.prop")
+df.celltypes.clusters <- as.data.frame(df.celltypes.clusters)
+df.celltypes.clusters.pivot <- pivot_longer(df.celltypes.clusters, 
+                                             cols = -cluster, 
+                                             names_to = "cell.type", 
+                                             values_to = "cell.prop")
 
-ggplot(d.pivot, aes(x = cell.type, y = cell.prop)) +
+boxplot.celltypes.clusters <- ggplot(df.celltypes.clusters.pivot, aes(x = cell.type, y = cell.prop)) +
   geom_boxplot(aes(fill = cell.type)) + 
   facet_wrap(~cluster) +
+  ggtitle(label = "Cell types proportions within each cluster") +
   theme(axis.text.x = element_blank(),
-        axis.ticks = element_blank())
+        axis.ticks = element_blank()) 
+
+spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
+dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
+boxplot.celltypes.clusters / (spatial.clusters | dim.clusters)
+
+breastcancermarkers.spatial <- SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2"), ncol = 4)
+breastcancermarkers.spatial / (spatial.clusters | dim.clusters)
+
+DimPlot(seuratobj.clusters, group.by = "orig.ident")
+
+
+# Save plots and ggplots
+dir.create(path = paste0(out.dir,"/plots/clustering/"), recursive = TRUE)
+ggsave(filename = "SC3stability_by_kparams.png",
+       plot = clustersc3.kparam,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "clustree_analysis.png",
+       plot = clustree.analysis,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "boxplot_celltypes_by_clusters.png",
+       plot = boxplot.celltypes.clusters,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "clusters_on_slides.png",
+       plot = spatial.clusters,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "dimplot_clusters.png",
+       plot = dim.clusters,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "breastcancermarkers_on_slides.png",
+       plot = breastcancermarkers.spatial,
+       path = paste0(out.dir,"/plots/clustering/"))
+
+all.plots <- list(clustersc3.kparam, clustree.analysis, boxplot.celltypes.clusters,spatial.clusters, dim.clusters, breastcancermarkers.spatial)
+save(all.plots, file = paste0("./results/ggplots/clustering.RData"))
+
 # Save data
 saveRDS(seuratobj.clusters, file = "./results/analysis/seuratobj.clusters.rds")
+
+
+
+
+
+
+
