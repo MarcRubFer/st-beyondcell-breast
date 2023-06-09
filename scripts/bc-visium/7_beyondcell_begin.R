@@ -7,6 +7,9 @@ library("tidyverse")
 library("tidygraph")
 library("patchwork")
 
+out.dir <- "./results"
+dir.create(path = out.dir, recursive = TRUE)
+
 set.seed(1)
 # Read single-cell experiment.
 seuratobj.clusters <- readRDS("./results/analysis/seuratobj.clusters.rds")
@@ -31,10 +34,6 @@ bc.filtered <- bcSubset(bc, nan.cells = 0.95)
 # Replace NAs by 0s
 bc.filtered@normalized[is.na(bc.filtered@normalized)] <- 0
 bc.recomputed <- bcRecompute(bc.filtered, slot = "normalized")
-
-# Run the UMAP reduction. 
-res <- c(0.1,0.2,0.3,0.4,0.5)
-bc.recomputed <- bcUMAP(bc.recomputed, k.neighbors = 4, res = res)
 
 #Selection of k parameters
 k.param <- c(4,8,12,16,20,40,60)
@@ -65,12 +64,14 @@ clustersc3.kparam <- ggplot(data=l, aes(x=bc_clusters_res., y=median.stability, 
   geom_line()+
   geom_point() +
   labs(x = "Resolution",
-       y = "Median of SC3 stability")
+       y = "Median of SC3 stability") +
+  ggtitle(label = "SC3 stability at different kparam and resolutions")
 
-# Run the bcUMAP function again, specifying the number of principal components you want to use.
-bc.recomputed <- bcUMAP(bc.recomputed, pc = 20, k.neighbors = 4, res = res)
+# Run the bcUMAP function again, specifying the k.params
+res <- c(0.1,0.2,0.3,0.4,0.5)
+bc.recomputed <- bcUMAP(bc.recomputed, pc = 20, k.neighbors = 16, res = res)
 
-
+# Reanalysis of sc3stability for plotting
 clustree.plot <- clustree(bc.recomputed@meta.data, 
                           prefix = "bc_clusters_res.",
                           node_colour = "sc3_stability") 
@@ -94,20 +95,75 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=bc_clusters_res., y=media
   labs(x = "Resolution",
        y = "Median of SC3 stability")
 
-(clustree.plot | max.stability.plot)
+clustree.plot <- clustree.plot + ggtitle(label = "Clustree with 16 k.param")
+
+patch.clustree <- clustersc3.kparam | clustree.plot
 
 # Visualize whether the cells are clustered based on the number of genes detected per each cell.
-bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "nFeature_Spatial", pt.size = 1.5, factor.col = FALSE)
-bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "nCount_Spatial", pt.size = 1.5, factor.col = FALSE)
-bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "Phase", pt.size = 1.5)
+bc.nFeatureRNA <- bcClusters(bc.recomputed, 
+                             UMAP = "beyondcell", 
+                             idents = "nFeature_Spatial", 
+                             pt.size = 1.5, 
+                             factor.col = FALSE) +
+  ggtitle("nFeatureRNA")
+bc.nCountRNA <- bcClusters(bc.recomputed, 
+                           UMAP = "beyondcell", 
+                           idents = "nCount_Spatial", 
+                           pt.size = 1.5, 
+                           factor.col = FALSE) +
+  ggtitle("nCountsRNA")
+bc.phases <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "Phase", pt.size = 1.5)
 
-a <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.4", pt.size = 1.5) +
-  ggtitle("BeyondCell Clusters (res 0.3)")
-b <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.4", pt.size = 1.5) +
-  ggtitle("Seurat Clusters (res 0.2)")
+bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.2)")
+bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.2", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.2)")
 
-a | b
+bc.nFeatureRNA | bc.nCountRNA
 
-bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1.5, spatial = TRUE)
+patch.bc.clusters <- bc.clusters | bc.clusters.seurat
 
-saveRDS(bc, file = "./results/analysis/beyondcellobject.rds")
+spatial.bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters <- spatial.bc.clusters +
+  plot_annotation(title = "Spatial Distribution of Beyondcell clusters")
+
+# Save plots and ggplots
+dir.create(path = paste0(out.dir,"/plots/beyondcell_create"), recursive = TRUE)
+
+ggsave(filename = "analysis_sc3_kparam.png",
+       plot = clustersc3.kparam,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "clustree_beyondcell_k16_res02.png",
+       plot = clustree.plot,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "patch_clustree_analysis.png",
+       plot = patch.clustree,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "bc_nFeature_dimplot.png",
+       plot = bc.nFeatureRNA,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "bc_nCounts_dimplot.png",
+       plot = bc.nCountRNA,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "bc_phases_dimplot.png",
+       plot = bc.phases,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "beyondcell_clusters_dimplot.png",
+       plot = bc.clusters,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "bc_clusters_dimplot_UMAPseurat.png",
+       plot = bc.clusters.seurat,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "patch_beyondcell_clusters.png",
+       plot = patch.bc.clusters,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+ggsave(filename = "spatial_distr_bc_clusters.png",
+       plot = spatial.bc.clusters,
+       path = paste0(out.dir,"/plots/beyondcell_create/"))
+
+all.plots <- list(clustersc3.kparam, clustree.plot, patch.clustree, bc.nFeatureRNA ,bc.nCountRNA, bc.phases,
+                  bc.clusters, bc.clusters.seurat, patch.bc.clusters, spatial.bc.clusters)
+save(all.plots, file = paste0("./results/ggplots/beyondcell_create.RData"))
+
+# Save Data
+saveRDS(bc.recomputed, file = "./results/analysis/beyondcellobject.rds")
