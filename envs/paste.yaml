@@ -1,0 +1,12 @@
+name: paste
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - numpy = 1.23.5
+  - scanpy
+  - paste-bio
+  - pandas
+  - pot = 0.8.1.0
