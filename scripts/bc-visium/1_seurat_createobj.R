@@ -40,6 +40,13 @@ seuratobj.s1@images[["Section1"]] <- image.s1
 
 seuratobj.s2@images[["Section2"]] <- image.s2
 
+# Spots in tissue
+in.tissue.s1 <- rownames(GetTissueCoordinates(seuratobj.s1))
+seuratobj.s1 <- subset(seuratobj.s1, cells = in.tissue.s1)
+
+in.tissue.s2 <- rownames(GetTissueCoordinates(seuratobj.s2))
+seuratobj.s2 <- subset(seuratobj.s2, cells = in.tissue.s2)
+
 # Merge Seurat objects
 seuratobj.merged <- merge(seuratobj.s1, y = seuratobj.s2, add.cell.ids = c("Sc1", "Sc2"), project = "Breast")
 
