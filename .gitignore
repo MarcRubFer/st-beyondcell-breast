@@ -12,3 +12,4 @@ results/analysis
 results/ggplots
 results/filtering
 results/plots
+scripts/__pycache__
