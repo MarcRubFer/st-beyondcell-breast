@@ -23,7 +23,7 @@ elbow
 
 # Selection of kNN at different resolution levels
 
-k.param <- c(10,20,30,40,50,60,70)
+k.param <- c(10,20,30,40,50)
 l <- lapply(X = k.param, FUN = function(x){
   res <- c(0.1,0.2,0.3,0.4,0.5)
   a <- FindNeighbors(seuratobj.phase, 
