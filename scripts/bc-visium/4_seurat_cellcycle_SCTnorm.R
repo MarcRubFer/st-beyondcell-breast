@@ -19,6 +19,8 @@ CellCyclebyIdent <- function(x, split, ident = "Phase") {
 }
 
 ## CODE ##
+# Random seed
+set.seed(1)
 
 # Load RDS
 seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvoluted.rds")
@@ -28,12 +30,11 @@ seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvolu
 # variable.features.n = NULL; 
 # variable.features.rv.th = 1.1: Use the genes with 
 # a residual variance > 1.1
+## Note: 20230706 - change parameters of SCT to default
 
 seuratobj.deconvoluted <- SCTransform(seuratobj.deconvoluted, 
                                   assay = "Spatial", 
-                                  return.only.var.genes = FALSE, 
-                                  variable.features.n = NULL, 
-                                  variable.features.rv.th = 1.1, 
+                                  return.only.var.genes = TRUE, 
                                   verbose = TRUE)
 seuratobj.deconvoluted <- RunPCA(seuratobj.deconvoluted, 
                                  assay = "SCT", 
@@ -47,9 +48,7 @@ dim.pre.slide.regress <- DimPlot(seuratobj.deconvoluted) +
 seuratobj.slideregress <- SCTransform(seuratobj.deconvoluted, 
                  assay = "Spatial", 
                  vars.to.regress = "orig.ident",
-                 return.only.var.genes = FALSE, 
-                 variable.features.n = NULL, 
-                 variable.features.rv.th = 1.1, 
+                 return.only.var.genes = TRUE, 
                  verbose = TRUE)
 
 seuratobj.slideregress <- RunPCA(seuratobj.slideregress, 
@@ -117,9 +116,7 @@ barplot.celltypes.phases <- ggplot(df.celltype.phase, aes(x = Cell.type)) +
 seuratobj.phase <- SCTransform(seuratobj.phase, 
                                       assay = "Spatial", 
                                       vars.to.regress = c("S.Score", "G2M.Score"),
-                                      return.only.var.genes = FALSE, 
-                                      variable.features.n = NULL, 
-                                      variable.features.rv.th = 1.1, 
+                                      return.only.var.genes = TRUE, 
                                       verbose = TRUE)
 seuratobj.phase <- RunPCA(seuratobj.phase, 
             assay = "SCT", 
@@ -144,9 +141,7 @@ seuratobj.phase.alt$CC.difference <- seuratobj.phase.alt$S.Score - seuratobj.pha
 seuratobj.phase.alt <- SCTransform(seuratobj.phase.alt, 
                  assay = "Spatial", 
                  vars.to.regress = "CC.difference",
-                 return.only.var.genes = FALSE, 
-                 variable.features.n = NULL, 
-                 variable.features.rv.th = 1.1, 
+                 return.only.var.genes = TRUE, 
                  verbose = TRUE)
 seuratobj.phase.alt <- RunPCA(seuratobj.phase.alt, 
             assay = "SCT", 
