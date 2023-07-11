@@ -31,11 +31,13 @@ seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvolu
 # variable.features.rv.th = 1.1: Use the genes with 
 # a residual variance > 1.1
 ## Note: 20230706 - change parameters of SCT to default
+## Update 2023-07-10: add min_cells = 100 (min number of cells that express a gene used for SCTprocessing, default 5)
 
 seuratobj.deconvoluted <- SCTransform(seuratobj.deconvoluted, 
                                   assay = "Spatial", 
                                   return.only.var.genes = TRUE, 
-                                  verbose = TRUE)
+                                  verbose = TRUE,
+                                  min_cells = 100)
 seuratobj.deconvoluted <- RunPCA(seuratobj.deconvoluted, 
                                  assay = "SCT", 
                                  npcs = 50, 
@@ -49,7 +51,8 @@ seuratobj.slideregress <- SCTransform(seuratobj.deconvoluted,
                  assay = "Spatial", 
                  vars.to.regress = "orig.ident",
                  return.only.var.genes = TRUE, 
-                 verbose = TRUE)
+                 verbose = TRUE,
+                 min_cells = 100)
 
 seuratobj.slideregress <- RunPCA(seuratobj.slideregress, 
                                  assay = "SCT", 
@@ -117,7 +120,8 @@ seuratobj.phase <- SCTransform(seuratobj.phase,
                                       assay = "Spatial", 
                                       vars.to.regress = c("S.Score", "G2M.Score"),
                                       return.only.var.genes = TRUE, 
-                                      verbose = TRUE)
+                                      verbose = TRUE,
+                                      min_cells = 100)
 seuratobj.phase <- RunPCA(seuratobj.phase, 
             assay = "SCT", 
             npcs = 50, 
@@ -142,7 +146,8 @@ seuratobj.phase.alt <- SCTransform(seuratobj.phase.alt,
                  assay = "Spatial", 
                  vars.to.regress = "CC.difference",
                  return.only.var.genes = TRUE, 
-                 verbose = TRUE)
+                 verbose = TRUE,
+                 min_cells = 100)
 seuratobj.phase.alt <- RunPCA(seuratobj.phase.alt, 
             assay = "SCT", 
             npcs = 50, 
