@@ -111,7 +111,7 @@ clustree.analysis <- (clustree.plot | max.stability.plot)
 
 cell.types <- names(seuratobj.clusters@meta.data)[6:14]
 df.celltypes.clusters <- seuratobj.clusters@meta.data[6:14]
-df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.3
+df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.1
 df.celltypes.clusters$cluster <- as.factor(df.celltypes.clusters$cluster)
 
 df.celltypes.clusters <- as.data.frame(df.celltypes.clusters)
@@ -127,8 +127,8 @@ boxplot.celltypes.clusters <- ggplot(df.celltypes.clusters.pivot, aes(x = cell.t
   theme(axis.text.x = element_blank(),
         axis.ticks = element_blank()) 
 
-spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.3")
-dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.3")
+spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
+dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
 boxplot.celltypes.clusters / (spatial.clusters | dim.clusters)
 
 breastcancermarkers.spatial <- SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2"), ncol = 4)
@@ -153,6 +153,9 @@ ggsave(filename = "clusters_on_slides.png",
        path = paste0(out.dir,"/plots/clustering/"))
 ggsave(filename = "dimplot_clusters.png",
        plot = dim.clusters,
+       path = paste0(out.dir,"/plots/clustering/"))
+ggsave(filename = "spatial_clusters.png",
+       plot = spatial.clusters,
        path = paste0(out.dir,"/plots/clustering/"))
 ggsave(filename = "breastcancermarkers_on_slides.png",
        plot = breastcancermarkers.spatial,
