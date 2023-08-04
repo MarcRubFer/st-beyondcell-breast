@@ -1,0 +1,13 @@
+name: spacexr
+channels:
+  - conda-forge
+dependencies:
+  - r-base
+  - r-devtools
+  - ca-certificates
+  - openssl
+  - r-seurat
+  - r-tidyverse
+  - r-clustree
+  - r-ggsci
+prefix: /Users/marcos/mambaforge/envs/spacexr
