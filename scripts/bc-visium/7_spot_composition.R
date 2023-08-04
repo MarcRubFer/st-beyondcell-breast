@@ -279,3 +279,16 @@ save(all.plots, file = paste0("./results/ggplots/spot_composition.RData"))
 saveRDS(seuratobj.spotcomp, file = "./results/analysis/seuratobj.spotcomp.rds")
 
 
+list.spatial.clusters <- SpatialDimPlot(seuratobj.spotcomp, group.by = "SCT_snn_res.0.2", combine = F) 
+list.spatial.clusters <- lapply(list.spatial.clusters, function(x){
+  x + scale_fill_ucscgb()
+})
+list.spatial.clusters[[1]]
+
+list.distrib.spotcomp <- SpatialDimPlot(seuratobj.distances, group.by = "spot.composition.filter", combine = F)
+list.distrib.spotcomp <- lapply(list.distrib.spotcomp, function(x){
+  x + scale_fill_ucscgb()
+})
+list.distrib.spotcomp[[2]]
+
+

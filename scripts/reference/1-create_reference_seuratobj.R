@@ -2,6 +2,7 @@
 rm(list = ls())
 
 library("Seurat")
+library("tidyverse")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE, showWarnings = FALSE)

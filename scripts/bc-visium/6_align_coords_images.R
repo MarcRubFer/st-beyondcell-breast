@@ -143,7 +143,7 @@ aligned.scaled.coords.slide2 <- read_tsv(file = "./data/tsv/aligned_coords_sc2.t
   mutate(z.coord = 2,
          adj_x = round(adj_x, digits = 0),
          adj_y = round(adj_y, digits = 0)) 
-rownames(aligned.scaled.coords.slide2) <- aligned.scaled.coords.slide2
+rownames(aligned.scaled.coords.slide2) <- aligned.scaled.coords.slide2$spots
 
 ### Merge slides 1-2
 aligned.scaled.merged <- rbind(aligned.scaled.coords.slide1,aligned.scaled.coords.slide2)
