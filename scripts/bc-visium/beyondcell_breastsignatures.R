@@ -84,15 +84,13 @@ bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "spot.
 patch.bc.clusters <- bc.clusters | bc.clusters.seurat
 
 # Drugs ranking
-bc.pure.ranked <- bcRanks(bc.recomputed, idents = "spot.dual")
-bc.pure.4squares <- bc4Squares(bc.pure.ranked, idents = "spot.dual")
-bc4squares.plots <- wrap_plots(bc.pure.4squares)
-ggsave(filename = "bc4squares.png",
-       plot = bc4squares.plots,
-       path = "./results/plots/beyondcell_breastsignatures/")
+bc.ranked <- bcRanks(bc.recomputed, idents = "spot.dual")
+bc.4squares <- bc4Squares(bc.ranked, idents = "spot.dual")
+bc4squares.plots <- wrap_plots(bc.4squares)
+
 
 # Select TOP-Differential-Drugs
-top.diff <- as.data.frame(bc.pure.ranked@ranks) %>%
+top.diff <- as.data.frame(bc.ranked@ranks) %>%
   select(starts_with(match = "spot.dual.group.")) %>%
   rownames_to_column("signature") %>%
   pivot_longer(cols = starts_with("spot.dual.group."), names_to = "cluster", values_to = "group") %>%
@@ -101,20 +99,20 @@ top.diff <- as.data.frame(bc.pure.ranked@ranks) %>%
   pull("signature") %>%
   unique()
 
-names.drugs <- as.data.frame(FindDrugs(bc.pure.ranked, x = top.diff)) %>%
+names.drugs <- as.data.frame(FindDrugs(bc.ranked, x = top.diff)) %>%
   select(IDs, preferred.and.sigs)
 
   
   # HeatMap Drugs
   # Matrix of TOP-Differential Drugs
-drugs.matrix <- bc.pure.ranked@normalized[top.diff,]
+drugs.matrix <- bc.ranked@normalized[top.diff,]
 dim(drugs.matrix)
 ## Calculate maximum and minimum for matrix
 drugs.max.matrix <- max(apply(drugs.matrix, 1, function(row) max(row)))
 drugs.min.matrix <- min(apply(drugs.matrix, 1, function(row) min(row)))
 
 ##1 Extract the number of cluster
-bc.clusters <- bc.pure.ranked@meta.data$spot.dual
+bc.clusters <- bc.ranked@meta.data$spot.dual
 ##2 Order the cluster vector
 orden_clusters <- order(bc.clusters)
 ##3 Rearrange the drugs matrix in order by cluster
@@ -144,3 +142,40 @@ heatmap.drugs <- Heatmap(
   heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
 )      
 heatmap.drugs
+
+# Subset signatures which have differences between groups
+moas.selected <- read_tsv(file = "./data/selected_breast_signatures.tsv")
+rownames(moas.selected) <- moas.selected$signature
+signatures.selected <- moas.selected %>%
+  select(which(!grepl(pattern = "gene", x = names(moas.selected)))) %>%
+  pull(signature)
+
+datos_seleccionados <- datos_ordenados_drugs[signatures.selected,]
+heatmap.subset <- Heatmap(
+  datos_seleccionados,
+  name = "bcScore",
+  cluster_columns = FALSE,
+  top_annotation = HeatmapAnnotation(clusters = clusters_ordenados,
+                                     col = list(clusters = c("Pure_Tumour" = "cornflowerblue",
+                                                             "Rest" = "red3"))),
+  right_annotation = rowAnnotation(MoA_PRISM = moas.selected$PRISM_MoA,
+                                   MoA_CTRP = moas.selected$CTRP_MoA,
+                                   MoA_GDSC = moas.selected$GDSC_MoA),
+  show_column_names = FALSE,
+  column_split = clusters_ordenados,
+  row_names_gp = gpar(fontsize = 6),
+  #row_labels = merge.drugs.names$preferred.and.sigs,
+  row_split = 7,
+  #show_row_dend = F,
+  row_title = NULL,
+  col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
+  heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
+)      
+heatmap.subset
+
+# Save plots
+ggsave(filename = "bc4squares.png",
+       plot = bc4squares.plots,
+       path = "./results/plots/beyondcell_breastsignatures/")
+
+
