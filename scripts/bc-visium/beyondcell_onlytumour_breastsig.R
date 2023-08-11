@@ -248,7 +248,7 @@ ERBB2.matrix <- bc.ranked.95@expr.matrix["ERBB2",]
 ERBB2.matrix <- ERBB2.matrix[colnames(datos_ordenados_drugs)]
 
 expr.levels.ERBB2 <- seq(from=min(ERBB2.matrix), to=max(ERBB2.matrix))
-col.ERBB2 <- brewer.pal(n = length(expr.levels.ERBB2), name = "Spectral")
+col.ERBB2 <- brewer.pal(n = length(expr.levels.ERBB2), name = "YlGnBu")
 col.anno.ERBB2 = colorRamp2(breaks = expr.levels.ERBB2, colors = rev(col.ERBB2))
 
 # Expression EGFR
@@ -257,7 +257,7 @@ EGFR.matrix <- bc.ranked.95@expr.matrix["EGFR",]
 EGFR.matrix <- EGFR.matrix[colnames(datos_ordenados_drugs)]
 
 expr.levels.EGFR <- round(seq(from=min(EGFR.matrix), to=max(EGFR.matrix), length.out = 4), digits = 1)
-col.EGFR <- brewer.pal(n = length(expr.levels.EGFR), name = "Spectral")
+col.EGFR <- brewer.pal(n = length(expr.levels.EGFR), name = "PuRd")
 col.anno.EGFR = colorRamp2(breaks = expr.levels.EGFR, colors = rev(col.EGFR))
 
 # Create heatmap with annotations
