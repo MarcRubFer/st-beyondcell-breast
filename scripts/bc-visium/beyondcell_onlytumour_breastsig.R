@@ -61,9 +61,6 @@ res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
 bc.recomputed <- bcUMAP(bc.recomputed, pc = 20, k.neighbors = 40, res = res)
 head(bc.recomputed@meta.data)
 
-
-
-
 # Reanalysis of sc3stability for plotting
 clustree.plot <- clustree(bc.recomputed@meta.data, 
                           prefix = "bc_clusters_res.",
@@ -89,6 +86,10 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=bc_clusters_res., y=media
        y = "Median of SC3 stability")
 
 clustree.plot <- clustree.plot + ggtitle(label = "Clustree with 40 k.param")
+
+ggsave(filename = "clustreeplot_beyondcell.png",
+       plot = clustree.plot,
+       path = "./results/plots/beyondcell_pure_breast/")
 
 # Test significance of clusters (sc-SHC package)
 
@@ -135,9 +136,9 @@ patch.bc.clusters <- bc.clusters | bc.clusters.seurat
 
 bc.clusters.new <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Beyondcell (sc-SHC)")
-
 bc.clusters.seurat.new <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_new", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Seurat (sc-SHC)")
+
 patch.bc.clusters.new <- bc.clusters.new | bc.clusters.seurat.new
 
 bc.clusters | bc.clusters.new
@@ -208,13 +209,12 @@ heatmap.drugs.10 <- Heatmap(
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation(clusters = clusters_ordenados,
-                                     ERBB2 = ERBB2.matrix,
-                                     EGFR = EGFR.matrix,
+                                     #ERBB2 = ERBB2.matrix,
+                                     #EGFR = EGFR.matrix,
                                      col = list(clusters = c("1" = "tomato",
                                                              "2" = "olivedrab",
                                                              "3" = "turquoise2",
-                                                             "4" = "blueviolet"),
-                                                ERBB2 = col.anno.ERBB2)),
+                                                             "4" = "blueviolet"))),
   #right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
   #                                 col = list(MoA = col.moas)),
   show_column_names = FALSE,
@@ -243,7 +243,7 @@ col.moas <- brewer.pal(n=length.moas, name = "Paired")
 names(col.moas) <- names.moas
 
 # Expression of ERBB2
-seuratobj.pure@assays$SCT@scale.data
+
 ERBB2.matrix <- bc.ranked.95@expr.matrix["ERBB2",]
 ERBB2.matrix <- ERBB2.matrix[colnames(datos_ordenados_drugs)]
 
@@ -304,7 +304,12 @@ BBCCCCCCCCCCCCCCCC
 ##CCCCCCCCCCCCCCCC
 "
 
-(spatial.bc.clusters.new[[1]] / spatial.bc.clusters.new[[2]]) + 
+spatial.heatmap <- (spatial.bc.clusters.new[[1]] / spatial.bc.clusters.new[[2]]) + 
   grob +
   plot_layout(design = layout)
 
+ggsave(filename = "spatial_and_heatmap_beyondcell.png",
+       plot = spatial.heatmap,
+       path = "./results/plots/beyondcell_pure_breast/")
+
+saveRDS(bc.ranked.95, file = paste0("./results/analysis/beyondcell_ranked95.rds"))
