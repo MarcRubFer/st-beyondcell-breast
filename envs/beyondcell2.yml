@@ -1,0 +1,15 @@
+name: beyondcell2
+channels:
+  - conda-forge
+dependencies:
+  - r-beyondcell
+  - bioconductor-complexheatmap
+  - ca-certificates
+  - openssl
+  - r-clustree
+  - r-devtools
+  - bioconductor-biocneighbors
+  - bioconductor-scry
+  - bioconductor-fgsea
+  - bioconductor-ggtree
+prefix: /Users/marcos/mambaforge/envs/beyondcell2
