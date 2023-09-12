@@ -14,11 +14,11 @@ dir.create(path = out.dir, recursive = TRUE)
 set.seed(1)
 
 # Load seuratobject
-seuratobj.aligned <- readRDS(file = "./results/analysis/seuratobj.aligned.rds")
-head(seuratobj.aligned@meta.data)
+seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvoluted.rds")
+head(seuratobj.deconvoluted@meta.data)
 
 # Subset cell types proportions metadata
-cell.type <- seuratobj.aligned@meta.data %>%
+cell.type <- seuratobj.deconvoluted@meta.data %>%
   select(c("B.cells","CAFs","Cancer.Epithelial","Endothelial","Myeloid","Normal.Epithelial","Plasmablasts","PVL","T.cells","Cell.Type"))
 head(cell.type)
 
@@ -247,7 +247,7 @@ metadata <- cell.type %>%
          cat.spot.composition)
 
 # Add metadata to new seuratobject
-seuratobj.spotcomp <- AddMetaData(seuratobj.aligned, metadata = metadata)
+seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
 head(seuratobj.spotcomp@meta.data)
 
 

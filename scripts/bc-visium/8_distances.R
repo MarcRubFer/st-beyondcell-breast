@@ -73,18 +73,18 @@ customSpatialFeaturePlot <- function(x, features, limits = NULL,
 set.seed(1)
 
 # Load seuratobject
-seuratobj.spotcomp <- readRDS(file = "./results/analysis/seuratobj.spotcomp.rds")
-head(seuratobj.spotcomp@meta.data)
+seuratobj.aligned <- readRDS(file = "./results/analysis/seuratobj.aligned.rds")
+head(seuratobj.aligned@meta.data)
 
 # Number of slides
-nslides <- length(seuratobj.spotcomp@images)
+nslides <- length(seuratobj.aligned@images)
 
 # Number of rows to split the SpatialDimPlots into and height of the final plot
 nrows <- nslides/3
 h <- 7*nrows
 
 # Get coordinates
-coordinates <- seuratobj.spotcomp@meta.data %>%
+coordinates <- seuratobj.aligned@meta.data %>%
   select(corr_x, corr_y, corr_z)
 
 # Euclidean distances
@@ -94,7 +94,7 @@ distances <- as.matrix(dist(coordinates, method = "euclidean"))
 distances.scaled <- distances/min(distances[distances > 0], na.rm = TRUE)
 
 # Get the Tumour/Non-tumour spots
-metadata <- seuratobj.spotcomp@meta.data %>%
+metadata <- seuratobj.aligned@meta.data %>%
   select(spot.composition.filter)
 
 tumour.spots <- metadata %>%
@@ -184,7 +184,7 @@ stats.new_df
 # Add metadata distances
 meta.toadd <- metadata2 %>%
   select(mindist.tumour:dist)
-seuratobj.distances <- AddMetaData(seuratobj.spotcomp, metadata = meta.toadd)
+seuratobj.distances <- AddMetaData(seuratobj.aligned, metadata = meta.toadd)
 head(seuratobj.distances@meta.data)
 
 

@@ -73,18 +73,18 @@ customSpatialFeaturePlot <- function(x, features, limits = NULL,
 set.seed(1)
 
 # Load seuratobject
-seuratobj.spotcomp <- readRDS(file = "./results/analysis/seuratobj.spotcomp.rds")
-head(seuratobj.spotcomp@meta.data)
+seuratobj.aligned <- readRDS(file = "./results/analysis/seuratobj.aligned.rds")
+head(seuratobj.aligned@meta.data)
 
 # Number of slides
-nslides <- length(seuratobj.spotcomp@images)
+nslides <- length(seuratobj.aligned@images)
 
 # Number of rows to split the SpatialDimPlots into and height of the final plot
 nrows <- nslides/3
 h <- 7*nrows
 
 # Get coordinates
-coordinates <- seuratobj.spotcomp@meta.data %>%
+coordinates <- seuratobj.aligned@meta.data %>%
   select(corr_x, corr_y, corr_z)
 
 # Euclidean distances
@@ -94,9 +94,9 @@ distances <- as.matrix(dist(coordinates, method = "euclidean"))
 distances.scaled <- distances/min(distances[distances > 0], na.rm = TRUE)
 
 
-head(seuratobj.spotcomp@meta.data)
+head(seuratobj.aligned@meta.data)
 # Split multiple spots in each cell type
-spot.comp.df <- seuratobj.spotcomp@meta.data %>%
+spot.comp.df <- seuratobj.aligned@meta.data %>%
   select(spot.composition.filter) %>%
   rownames_to_column("spot")
 spot.comp.splited <- data.frame()
@@ -202,7 +202,7 @@ metadata <- spot.comp.dist %>%
 rownames(metadata) <- rwn
 head(metadata)
 
-seuratobj.distances <- AddMetaData(seuratobj.spotcomp, metadata = metadata)
+seuratobj.distances <- AddMetaData(seuratobj.aligned, metadata = metadata)
 head(seuratobj.distances@meta.data)
 
 

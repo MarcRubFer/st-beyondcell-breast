@@ -23,7 +23,7 @@ CellCyclebyIdent <- function(x, split, ident = "Phase") {
 set.seed(1)
 
 # Load RDS
-seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvoluted.rds")
+seuratobj.spotcomp <- readRDS(file = "./results/analysis/seuratobj.spotcomp.rds")
 
 # Perform SCT normalization without cell cycle regression.
 # return.only.var.genes = FALSE: Output the resulting scaled matrix with all genes.
@@ -33,21 +33,21 @@ seuratobj.deconvoluted <- readRDS(file = "./results/analysis/seuratobj.deconvolu
 ## Note: 20230706 - change parameters of SCT to default
 ## Update 2023-07-10: add min_cells = 100 (min number of cells that express a gene used for SCTprocessing, default 5)
 
-seuratobj.deconvoluted <- SCTransform(seuratobj.deconvoluted, 
+seuratobj.spotcomp <- SCTransform(seuratobj.spotcomp, 
                                   assay = "Spatial", 
                                   return.only.var.genes = TRUE, 
                                   verbose = TRUE,
                                   min_cells = 100)
-seuratobj.deconvoluted <- RunPCA(seuratobj.deconvoluted, 
+seuratobj.spotcomp <- RunPCA(seuratobj.spotcomp, 
                                  assay = "SCT", 
                                  npcs = 50, 
-                                 features = VariableFeatures(seuratobj.deconvoluted))
+                                 features = VariableFeatures(seuratobj.spotcomp))
 
-dim.pre.slide.regress <- DimPlot(seuratobj.deconvoluted) +
+dim.pre.slide.regress <- DimPlot(seuratobj.spotcomp) +
   ggtitle("DimPlot without slide regression")
 
 # Regression by slide (orig.ident)
-seuratobj.slideregress <- SCTransform(seuratobj.deconvoluted, 
+seuratobj.slideregress <- SCTransform(seuratobj.spotcomp, 
                  assay = "Spatial", 
                  vars.to.regress = "orig.ident",
                  return.only.var.genes = TRUE, 
