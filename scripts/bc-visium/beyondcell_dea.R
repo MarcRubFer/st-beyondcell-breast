@@ -25,16 +25,22 @@ set.seed(1)
 seuratobj.distances <- readRDS("./results/analysis/seuratobj.distances.rds")
 bc.ranked.95 <- readRDS("./results/analysis/beyondcell_ranked95.rds")
 
+# Export TCs from beyondcell object (for both resolutions)
 metadata.tcs <- bc.ranked.95@meta.data %>%
-  select(bc_clusters_new_renamed)
-tcs <- sort(unique(metadata.tcs$bc_clusters))
+  select(starts_with("bc_clusters_new_renamed"))
+tcs.0.1 <- sort(unique(metadata.tcs$bc_clusters_new_renamed_res_0.1))
+tcs.0.2 <- sort(unique(metadata.tcs$bc_clusters_new_renamed_res_0.2))
 
+# Create new seurat object with TC metadata
 seuratobj.tcs <- AddMetaData(seuratobj.distances, metadata = metadata.tcs)
-seuratobj.tcs <- subset(seuratobj.tcs, subset = bc_clusters_new_renamed %in% tcs)
+
+# Subset spots with TC description (is the same use res0.1 or res0.2, are the same spots)
+seuratobj.tcs <- subset(seuratobj.tcs, subset = bc_clusters_new_renamed_res_0.1 %in% tcs.0.1)
 
 # Perform DEA for each TC (for GSEA all genes)
-Idents(seuratobj.tcs) <- "bc_clusters_new_renamed"
-dea.gsea <- lapply(tcs, FUN = function(i) {
+# Resolution 0.1
+Idents(seuratobj.tcs) <- "bc_clusters_new_renamed_res_0.1"
+dea.gsea.res01 <- lapply(tcs.0.1, FUN = function(i) {
   markers <- FindMarkers(seuratobj.tcs, 
                          ident.1 = i, 
                          min.pct = 0, 
