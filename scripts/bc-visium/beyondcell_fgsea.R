@@ -25,20 +25,26 @@ seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.cluste
 bc.ranked.95 <- readRDS(file = "./results/analysis/beyondcell_ranked95.rds")
 
 # Read table data for gsea
-table.gsea <- read_tsv(file = "./data/dea_tables/dea.gsea.tsv")
+table.gsea.res.0.1 <- read_tsv(file = "./data/dea_tables/dea.gsea.res_0.1.tsv")
+table.gsea.res.0.2 <- read_tsv(file = "./data/dea_tables/dea.gsea.res_0.2.tsv")
 
 # Extract number of therapeutic clusters
-num.tcs <- table.gsea %>%
+num.tcs.res.0.1 <- table.gsea.res.0.1 %>%
+  select(TC) %>%
+  pull(TC) %>%
+  unique()
+
+num.tcs.res.0.2 <- table.gsea.res.0.2 %>%
   select(TC) %>%
   pull(TC) %>%
   unique()
 
 # Get, as named vectors, the logFC from each TC (names = gene symbol)
-list.vector.gsea <- lapply(num.tcs, function(tc) {
-  names.genes <- table.gsea %>%
+list.vector.gsea.res.0.1 <- lapply(num.tcs.res.0.1, function(tc) {
+  names.genes <- table.gsea.res.0.1 %>%
     filter(TC == tc) %>%
     pull(gene)
-  logfc <- table.gsea %>%
+  logfc <- table.gsea.res.0.1 %>%
     filter(TC == tc) %>%
     pull(avg_log2FC)
   names(logfc) <- names.genes
@@ -46,10 +52,17 @@ list.vector.gsea <- lapply(num.tcs, function(tc) {
   return(logfc)
 })
 
-positive <- sapply(num.tcs, function(x) {length(which(list.vector.gsea[[x]] > 0))})
-negative <- sapply(num.tcs, function(x) {length(which(list.vector.gsea[[x]] < 0))})
-
-distrib.fc <- cbind(num.tcs,positive,negative)
+list.vector.gsea.res.0.2 <- lapply(num.tcs.res.0.2, function(tc) {
+  names.genes <- table.gsea.res.0.2 %>%
+    filter(TC == tc) %>%
+    pull(gene)
+  logfc <- table.gsea.res.0.2 %>%
+    filter(TC == tc) %>%
+    pull(avg_log2FC)
+  names(logfc) <- names.genes
+  logfc <- logfc[order(logfc, decreasing = TRUE)]
+  return(logfc)
+})
 
 # Compute fastGSEA (fgsea) for each TC
 #results.gsea <- lapply(X = list.vector.gsea, FUN = function(vector.tc) {
@@ -61,8 +74,20 @@ distrib.fc <- cbind(num.tcs,positive,negative)
 #  return(fgseaRes)
 #})
 
-results.gsea2 <- lapply(X = num.tcs, FUN = function(tc) {
-  vector.tc <- list.vector.gsea[[tc]]
+results.gsea.res.0.1 <- lapply(X = num.tcs.res.0.1, FUN = function(tc) {
+  vector.tc <- list.vector.gsea.res.0.1[[tc]]
+  fgseaRes <- fgsea(pathways = reactome.functional.gmt, 
+                    stats    = vector.tc,
+                    minSize  = 15,
+                    maxSize  = 500,
+                    nPermSimple = 5000)
+  fgseaRes <- as.data.frame(fgseaRes)
+  fgseaRes$TC <- tc
+  return(fgseaRes)
+})
+
+results.gsea.res.0.2 <- lapply(X = num.tcs.res.0.2, FUN = function(tc) {
+  vector.tc <- list.vector.gsea.res.0.2[[tc]]
   fgseaRes <- fgsea(pathways = reactome.functional.gmt, 
                     stats    = vector.tc,
                     minSize  = 15,
@@ -73,34 +98,84 @@ results.gsea2 <- lapply(X = num.tcs, FUN = function(tc) {
   return(fgseaRes)
 })
 
-
 # Format table
-gsea.table <- results.gsea2 %>%
+gsea.table.res.0.1 <- results.gsea.res.0.1 %>%
+  bind_rows() %>%
+  rename(NAME = pathway,
+         FDR.q.val = padj, COMPARISON = TC)
+
+gsea.table.res.0.2 <- results.gsea.res.0.2 %>%
   bind_rows() %>%
   rename(NAME = pathway,
          FDR.q.val = padj, COMPARISON = TC)
 
 # Get the top 20 signatures
-chosen.fun.sigs <- gsea.table %>%
+chosen.fun.sigs.res.0.1 <- gsea.table.res.0.1 %>%
   slice_max(order_by = abs(NES), n = 50, by = COMPARISON) %>%
   #top_n(n = 20, wt = abs(NES)) %>%
   pull(NAME) %>%
   unique()
 
-gsea.table <- gsea.table %>%
-  filter(!is.na(NES) & NAME %in% chosen.fun.sigs) %>%
+table.bub.heatmap.res.0.1 <- gsea.table.res.0.1 %>%
+  filter(!is.na(NES) & NAME %in% chosen.fun.sigs.res.0.1) %>%
+  mutate(COMPARISON = factor(COMPARISON))
+
+
+chosen.fun.sigs.res.0.2 <- gsea.table.res.0.2 %>%
+  slice_max(order_by = abs(NES), n = 50, by = COMPARISON) %>%
+  #top_n(n = 20, wt = abs(NES)) %>%
+  pull(NAME) %>%
+  unique()
+
+table.bub.heatmap.res.0.2 <- gsea.table.res.0.2 %>%
+  filter(!is.na(NES) & NAME %in% chosen.fun.sigs.res.0.2) %>%
   mutate(COMPARISON = factor(COMPARISON))
 
 # Plot bubbleheatmap
-fig2B <- ggbubbleHeatmap(gsea.table, cluster.cols = TRUE, n.perm = 100000) +
-  theme(axis.text.y = element_text(size = 6))
-fig2B[[2]] <- fig2B[[2]] +
-  theme(axis.text.y = element_text(size = 6))
-fig2B 
+bub.heatmap.res.0.1 <- ggbubbleHeatmap(table.bub.heatmap.res.0.1, cluster.cols = TRUE, n.perm = 5000) 
+bub.heatmap.res.0.1[[2]] <- bub.heatmap.res.0.1[[2]] +
+  theme(axis.text.y = element_text(size = 5))
+bub.heatmap.res.0.1 
 
-gsea.table.sub <- gsea.table %>%
+bub.heatmap.res.0.2 <- ggbubbleHeatmap(table.bub.heatmap.res.0.2, cluster.cols = TRUE, n.perm = 100000) +
+  theme(axis.text.y = element_text(size = 3))
+bub.heatmap.res.0.2[[2]] <- bub.heatmap.res.0.2[[2]] +
+  theme(axis.text.y = element_text(size = 5))
+bub.heatmap.res.0.2
+
+spatial.bc.clusters.new.res.0.1 <- bcClusters(bc.ranked.95, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.new.res.0.2 <- bcClusters(bc.ranked.95, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+
+layout <- "
+####CCCCCCCCCCCCCCCC
+AAAACCCCCCCCCCCCCCCC
+AAAACCCCCCCCCCCCCCCC
+BBBBCCCCCCCCCCCCCCCC
+BBBBCCCCCCCCCCCCCCCC
+####CCCCCCCCCCCCCCCC
+"
+
+spatial.heatmap.res.0.1 <- (spatial.bc.clusters.new.res.0.1[[1]] / spatial.bc.clusters.new.res.0.1[[2]]) + 
+  bub.heatmap.res.0.1 +
+  plot_layout(design = layout)
+
+spatial.heatmap.res.0.2 <- (spatial.bc.clusters.new.res.0.2[[1]] / spatial.bc.clusters.new.res.0.2[[2]]) + 
+  bub.heatmap.res.0.2 +
+  plot_layout(design = layout)
+
+# Save bubble heatmaps
+ggsave(filename = "GSEA_spatial_bubbleheatmap_res_0.1.png",
+       plot = spatial.heatmap.res.0.1,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "GSEA_spatial_bubbleheatmap_res_0.2.png",
+       plot = spatial.heatmap.res.0.2,
+       path = "./results/plots/beyondcell_pure_breast/")
+
+############################################################################################################3
+
+gsea.table.res.0.1.sub <- gsea.table.res.0.1 %>%
   filter(!grepl(pattern = "^REACTOME", x = NAME))
-fig.sub <- ggbubbleHeatmap(gsea.table.sub, cluster.cols = TRUE, n.perm = 100000) 
+fig.sub <- ggbubbleHeatmap(gsea.table.res.0.1.sub, cluster.cols = TRUE, n.perm = 100000) 
 
 
 # GSEA only breast sigs
@@ -126,7 +201,7 @@ fig.breast <- ggbubbleHeatmap(gsea.table.breast, cluster.cols = TRUE, n.perm = 1
 
 
 
-spatial.bc.clusters.new <- bcClusters(bc.ranked.95, UMAP = "beyondcell", idents = "bc_clusters_new_renamed", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.new.res.0.1 <- bcClusters(bc.ranked.95, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
 
 layout <- "
 ##CCCCCCCCCCCCCCCC
@@ -137,8 +212,8 @@ BBCCCCCCCCCCCCCCCC
 ##CCCCCCCCCCCCCCCC
 "
 
-spatial.heatmap <- (spatial.bc.clusters.new[[1]] / spatial.bc.clusters.new[[2]]) + 
-  fig2B +
+spatial.heatmap <- (spatial.bc.clusters.new.res.0.1[[1]] / spatial.bc.clusters.new.res.0.1[[2]]) + 
+  bub.heatmap +
   plot_layout(design = layout)
 
 spatial.sub <- (spatial.bc.clusters.new[[1]] / spatial.bc.clusters.new[[2]]) | fig.sub 
@@ -170,10 +245,4 @@ for (index in 1:length(num.tcs)) {
   write.table(df_tmp, file = file_name, sep = "\t", col.names = TRUE, row.names = FALSE, quote = FALSE)
 }
 
-# Save bubble heatmaps
-ggsave(filename = "global.bubbleheatmap.png",
-       plot = spatial.heatmap,
-       path = "./results/plots/beyondcell_pure_breast/")
-ggsave(filename = "breast.sigs.bubbleheatmap.png",
-       plot = spatial.breast,
-       path = "./results/plots/beyondcell_pure_breast/")
+

@@ -93,6 +93,8 @@ clustersc3.kparam <- ggplot(data=l, aes(x=bc_clusters_res., y=median.stability, 
        y = "Median of SC3 stability") +
   ggtitle(label = "SC3 stability at different kparam and resolutions")
 
+
+
 # Run the bcUMAP function again, specifying the k.params
 res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
 bc.recomputed <- bcUMAP(bc.recomputed, pc = 20, k.neighbors = 30, res = res)
@@ -124,9 +126,7 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=bc_clusters_res., y=media
 
 clustree.plot <- clustree.plot + ggtitle(label = "Clustree with 30 k.param")
 
-ggsave(filename = "clustreeplot_beyondcell.png",
-       plot = clustree.plot,
-       path = "./results/plots/beyondcell_pure_breast/")
+
 
 # Test significance of clusters (sc-SHC package)
 
@@ -164,31 +164,35 @@ bc.recomputed <- bcAddMetadata(bc.recomputed, TCs)
 head(bc.recomputed@meta.data)
 
 # Plot UMAPs Beyondcell and Seurat clustering
-bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1) +
+bc.clusters.res.0.1 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.1)")
-bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.1", pt.size = 1) +
+bc.clusters.seurat.res.0.1 <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.1", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.1)")
-patch.bc.clusters <- bc.clusters | bc.clusters.seurat
+patch.bc.clusters.res.0.1 <- bc.clusters.res.0.1 | bc.clusters.seurat.res.0.1
 
-bc.clusters.new <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1) +
+bc.clusters.sc.res.0.1 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Beyondcell (sc-SHC)")
-bc.clusters.seurat.new <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1) +
+bc.clusters.seurat.sc.res.0.1 <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Seurat (sc-SHC)")
 
-patch.bc.clusters.new <- bc.clusters.new | bc.clusters.seurat.new
+patch.bc.clusters.sc <- bc.clusters.sc.res.0.1 | bc.clusters.seurat.sc.res.0.1
 
-bc.clusters | bc.clusters.new
+patch.clustering <- bc.clusters.res.0.1 | bc.clusters.sc.res.0.1
+
+
 
 # Plot spatial distribution
-spatial.bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
-spatial.bc.clusters <- spatial.bc.clusters +
+spatial.bc.clusters.res.0.1 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.res.0.1 <- spatial.bc.clusters.res.0.1 +
   plot_annotation(title = "Spatial Distribution of Beyondcell clusters")
 
-spatial.bc.clusters.new <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
-spatial.bc.clusters.new <- spatial.bc.clusters.new +
+spatial.bc.clusters.sc.res.0.1 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.sc.res.0.1 <- spatial.bc.clusters.sc.res.0.1 +
   plot_annotation(title = "Spatial Distribution of Beyondcell clusters (sc-SHC)")
 
-spatial.bc.clusters / spatial.bc.clusters.new
+patch.spatial.clustering <- spatial.bc.clusters.res.0.1 / spatial.bc.clusters.sc.res.0.1
+
+
 
 ## RESOLUTION 0.2
 # Compute Therapeutic Clusters (TCs)
@@ -221,33 +225,55 @@ bc.recomputed <- bcAddMetadata(bc.recomputed, TCs)
 head(bc.recomputed@meta.data)
 
 # Plot UMAPs Beyondcell and Seurat clustering
-bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1) +
+bc.clusters.res.0.2 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.2)")
-bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.1", pt.size = 1) +
-  ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.1)")
-patch.bc.clusters <- bc.clusters | bc.clusters.seurat
+bc.clusters.seurat.res.0.2 <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.2", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.2)")
 
-bc.clusters.new <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1) +
+patch.bc.clusters.res.0.2 <- bc.clusters.res.0.2 | bc.clusters.seurat.res.0.2
+
+bc.clusters.sc.res.0.2 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Beyondcell (sc-SHC)")
-bc.clusters.seurat.new <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_new_renamed_res_0.1", pt.size = 1) +
+bc.clusters.seurat.sc.res.0.2 <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Seurat (sc-SHC)")
 
-patch.bc.clusters.new <- bc.clusters.new | bc.clusters.seurat.new
+patch.bc.clusters.sc.res.0.2 <- bc.clusters.sc.res.0.2 | bc.clusters.seurat.sc.res.0.2
 
-bc.clusters | bc.clusters.new
+patch.clustering.res.0.2 <- bc.clusters.res.0.2 | bc.clusters.sc.res.0.2
+
 
 # Plot spatial distribution
-spatial.bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
-spatial.bc.clusters <- spatial.bc.clusters +
+spatial.bc.clusters.res.0.2 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.res.0.2 <- spatial.bc.clusters.res.0.2 +
   plot_annotation(title = "Spatial Distribution of Beyondcell clusters")
 
-spatial.bc.clusters.new <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
-spatial.bc.clusters.new <- spatial.bc.clusters.new +
+spatial.bc.clusters.sc.res.0.2 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.sc.res.0.2 <- spatial.bc.clusters.sc.res.0.2 +
   plot_annotation(title = "Spatial Distribution of Beyondcell clusters (sc-SHC)")
 
-spatial.bc.clusters / spatial.bc.clusters.new
+patch.spatial.clustering.res.0.2 <- spatial.bc.clusters.res.0.2 / spatial.bc.clusters.sc.res.0.2
+
+
 
 #SAVE PLOTS
+ggsave(filename = "bc_clustersc3_kparam.png",
+       plot = clustersc3.kparam,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "clustreeplot_beyondcell.png",
+       plot = clustree.plot,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "bc_patch_clustering_res_0.1.png",
+       plot = patch.clustering,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "bc_patch_spatial_clustering_res_0.1.png",
+       plot = patch.spatial.clustering,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "bc_patch_clustering_res_0.2.png",
+       plot = patch.clustering.res.0.2,
+       path = "./results/plots/beyondcell_pure_breast/")
+ggsave(filename = "bc_patch_spatial_clustering_res_0.2.png",
+       plot = patch.spatial.clustering.res.0.2,
+       path = "./results/plots/beyondcell_pure_breast/")
 
 # SAVE DATA
 saveRDS(bc.recomputed, file = paste0("./results/analysis/beyondcell_recomputed.rds"))

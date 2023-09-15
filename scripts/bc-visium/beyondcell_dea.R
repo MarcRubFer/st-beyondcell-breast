@@ -53,7 +53,21 @@ dea.gsea.res01 <- lapply(tcs.0.1, FUN = function(i) {
 }) %>%
   bind_rows()
 
-genes.by.cluster <- dea.gsea %>% 
+Idents(seuratobj.tcs) <- "bc_clusters_new_renamed_res_0.2"
+dea.gsea.res02 <- lapply(tcs.0.2, FUN = function(i) {
+  markers <- FindMarkers(seuratobj.tcs, 
+                         ident.1 = i, 
+                         min.pct = 0, 
+                         logfc.threshold = 0, 
+                         test.use = "wilcox")
+  markers <- markers %>%
+    rownames_to_column("gene") %>%
+    mutate(TC = i)
+  return(markers)
+}) %>%
+  bind_rows()
+
+genes.by.cluster <- dea.gsea.res01 %>% 
   group_by(TC) %>%
   summarise(n_genes = n())
 
@@ -83,6 +97,10 @@ genes.by.cluster.ora1 <- dea.ora.1 %>%
 # Save table
 dir.create(path = "./data/dea_tables/")
 write.table(dea.gsea, file = "./data/dea_tables/dea.gsea.tsv", sep = "\t",
+            col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(dea.gsea.res01, file = "./data/dea_tables/dea.gsea.res_0.1.tsv", sep = "\t",
+            col.names = TRUE, row.names = FALSE, quote = FALSE)
+write.table(dea.gsea.res02, file = "./data/dea_tables/dea.gsea.res_0.2.tsv", sep = "\t",
             col.names = TRUE, row.names = FALSE, quote = FALSE)
 write.table(dea.ora.0.5, file = "./data/dea_tables/dea.ora_0.5.tsv", sep = "\t",
             col.names = TRUE, row.names = FALSE, quote = FALSE)
