@@ -69,7 +69,7 @@ clustersc3.kparam <- ggplot(data=l, aes(x=SCT_snn_res., y=median.stability, grou
 seuratobj.clusters <- FindNeighbors(seuratobj.phase, 
                                     reduction = "pca", 
                                     dims = 1:20, 
-                                    k.param = 20)
+                                    k.param = 50)
 res <- c(0.1,0.2,0.3,0.4,0.5)
 seuratobj.clusters <- FindClusters(seuratobj.clusters, 
                                    resolution = res, 
@@ -112,7 +112,7 @@ clustree.analysis <- (clustree.plot | max.stability.plot)
 cell.types <- names(seuratobj.clusters@meta.data)[6:14]
 df.celltypes.clusters <- seuratobj.clusters@meta.data[6:14]
 df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.2
-df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.1
+#df.celltypes.clusters$cluster <- seuratobj.clusters@meta.data$SCT_snn_res.0.1
 df.celltypes.clusters$cluster <- as.factor(df.celltypes.clusters$cluster)
 
 df.celltypes.clusters <- as.data.frame(df.celltypes.clusters)
@@ -133,10 +133,11 @@ dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
 
 spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
 dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
-boxplot.celltypes.clusters / (spatial.clusters | dim.clusters)
+(boxplot.celltypes.clusters | (spatial.clusters / dim.clusters))  + 
+  plot_annotation(tag_levels = 'A')
 
 breastcancermarkers.spatial <- SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2"), ncol = 4)
-breastcancermarkers.spatial / (spatial.clusters | dim.clusters)
+breastcancermarkers.spatial / (spatial.clusters | dim.clusters) 
 
 DimPlot(seuratobj.clusters, group.by = "orig.ident")
 
