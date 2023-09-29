@@ -255,51 +255,95 @@ saveRDS(bc.ranked.95, file = paste0("./results/analysis/beyondcell_ranked95.rds"
 # For 10% cutoff bcRanks (default)
 
 # cutoff 10%
-#bc.ranked <- bcRanks(bc.recomputed, idents = "bc_clusters_new_renamed")
+bc.ranked <- bcRanks(bc.recomputed, idents = "bc_clusters_new_renamed_res_0.2")
+
+bc4squares.res.0.2 <- bc4Squares(bc.ranked, idents = "bc_clusters_new_renamed_res_0.2") 
+bc4squares.res.0.2.plots <- wrap_plots(bc4squares.res.0.2) +
+  plot_layout(guides = "collect")
 
 # Select TOP-Differential-Drugs
 # For cutoff 10%
-#top.diff.10 <- as.data.frame(bc.ranked@ranks) %>%
-#  select(starts_with(match = "bc_clusters_new_renamed.group.")) %>%
-#  rownames_to_column("signature") %>%
-#  pivot_longer(cols = starts_with("bc_clusters_new_renamed.group."), names_to = "cluster", values_to = "group") %>%
-#  filter(group != is.na(group),
-#         grepl("Differential", group)) %>%
-#  pull("signature") %>%
-#  unique()
+top.diff.10 <- as.data.frame(bc.ranked@ranks) %>%
+  select(starts_with(match = "bc_clusters_new_renamed_res_0.2.group.")) %>%
+  rownames_to_column("signature") %>%
+  pivot_longer(cols = starts_with("bc_clusters_new_renamed_res_0.2.group."), names_to = "cluster", values_to = "group") %>%
+  filter(group != is.na(group),
+         grepl("Differential", group)) %>%
+  pull("signature") %>%
+  unique()
 
-#drugs.matrix.10 <- bc.ranked@normalized[top.diff.10,]
+drugs.matrix.10 <- bc.ranked@normalized[top.diff.10,]
 
-#drugs.max.matrix.10 <- max(apply(drugs.matrix.10, 1, function(row) max(row)))
-#drugs.min.matrix.10 <- min(apply(drugs.matrix.10, 1, function(row) min(row)))
+drugs.max.matrix.10 <- max(apply(drugs.matrix.10, 1, function(row) max(row)))
+drugs.min.matrix.10 <- min(apply(drugs.matrix.10, 1, function(row) min(row)))
 
-#bc.clusters.10 <- bc.ranked@meta.data$bc_clusters_new_renamed
-#orden_clusters.10 <- order(bc.clusters.10)
-#datos_ordenados_drugs.10 <- drugs.matrix.10[, orden_clusters.10]
-#clusters_ordenados.10 <- bc.clusters.10[orden_clusters.10]
+bc.clusters.10 <- bc.ranked@meta.data$bc_clusters_new_renamed_res_0.2
+orden_clusters.10 <- order(bc.clusters.10)
+datos_ordenados_drugs.10 <- drugs.matrix.10[, orden_clusters.10]
+clusters_ordenados.10 <- bc.clusters.10[orden_clusters.10]
 
-## Create heatmap with annotations
-#heatmap.drugs.10 <- Heatmap(
-#  datos_ordenados_drugs.10,
-#  name = "bcScore",
-#  cluster_columns = FALSE,
-#  top_annotation = HeatmapAnnotation(clusters = clusters_ordenados,
-#                                     #ERBB2 = ERBB2.matrix,
-#                                     #EGFR = EGFR.matrix,
-#                                     col = list(clusters = c("1" = "tomato",
-#                                                             "2" = "olivedrab",
-#                                                             "3" = "turquoise2",
-#                                                             "4" = "blueviolet"))),
-#  #right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
-#  #                                 col = list(MoA = col.moas)),
-#  show_column_names = FALSE,
-#  column_split = clusters_ordenados,
-#  row_names_gp = gpar(fontsize = 6),
-#  #row_labels = collapsed.moas$preferred.drug.names,
-#  row_split = 5,
-#  #show_row_dend = F,
-#  row_title = NULL,
-#  col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
-#  heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
-#)      
-#heatmap.drugs.10
+# Collapsed moas (annotated drugs)
+collapsed.moas <- read_tsv(file = "./data/selected_breast_signatures - Hoja 3.tsv")
+collapsed.moas <- as.data.frame(collapsed.moas)
+rownames(collapsed.moas) <- collapsed.moas$signature_complete
+
+collapsed.moas.res.0.2 <- collapsed.moas[match(rownames(datos_ordenados_drugs.10),collapsed.moas$signature_complete),]
+names.moas.res.0.2 <- levels(factor(collapsed.moas.res.0.2$collapsed.MoAs))
+length.moas.res.0.2 <- length(names.moas.res.0.2)
+col.moas.res.0.2 <- colorRampPalette(brewer.pal(12,name = "Paired"))(length.moas.res.0.2)
+names(col.moas.res.0.2) <- names.moas.res.0.2
+
+# Create heatmap with annotations
+heatmap.drugs.10 <- Heatmap(
+  datos_ordenados_drugs.10,
+  name = "bcScore",
+  cluster_columns = FALSE,
+  top_annotation = HeatmapAnnotation(Tclusters = clusters_ordenados.10,
+                                     col = list(Tclusters = c("1" = "tomato",
+                                                             "2" = "olivedrab",
+                                                             "3" = "turquoise2",
+                                                             "4" = "blueviolet"))),
+  #right_annotation = rowAnnotation(MoA = collapsed.moas.res.0.2$collapsed.MoAs),
+  
+  right_annotation = rowAnnotation(MoA = collapsed.moas.res.0.2$collapsed.MoAs,
+                                   col = list(MoA = col.moas.res.0.2)),
+  show_column_names = FALSE,
+  column_split = clusters_ordenados.10,
+  row_names_gp = gpar(fontsize = 6,
+                      fontface = "bold"),
+  row_labels = collapsed.moas.res.0.2$preferred.drug.names,
+  row_split = 5,
+  #show_row_dend = F,
+  row_title = NULL,
+  col = colorRamp2(c(drugs.min.matrix.10, 0, drugs.max.matrix.10), c("blue", "white", "red")),
+  heatmap_legend_param = list(at = c(drugs.min.matrix.10, 0, drugs.max.matrix.10))
+)      
+heatmap.drugs.10 <- draw(heatmap.drugs.10, merge_legend = TRUE)
+heatmap.drugs.10
+
+# Store Heatmap as an object to work in patchwork. 
+w = convertWidth(unit(1, "npc")*(9/10), "inch", valueOnly = TRUE)
+h = convertHeight(unit(1, "npc")*(4/5), "inch", valueOnly = TRUE)
+
+grob.res.10.90.0.2 <- grid.grabExpr(draw(heatmap.drugs.10), width = w, height = h)
+
+layout <- "
+##CCCCCCCCCCCCCCCC
+AACCCCCCCCCCCCCCCC
+AACCCCCCCCCCCCCCCC
+BBCCCCCCCCCCCCCCCC
+BBCCCCCCCCCCCCCCCC
+##CCCCCCCCCCCCCCCC
+"
+
+spatial.bc.clusters.10.90.0.2 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_new_renamed_res_0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.heatmap.10.90.res.0.2 <- (spatial.bc.clusters.10.90.0.2[[1]] / spatial.bc.clusters.10.90.0.2[[2]]) + 
+  grob.res.10.90.0.2 +
+  plot_layout(design = layout)
+
+ggsave(filename = "spatial_and_heatmap_beyondcell_10-90_res_02.pdf",
+       plot = spatial.heatmap.10.90.res.0.2,
+       path = "./results/plots/beyondcell_pure_breast/")
+
+# Save data
+saveRDS(bc.ranked, file = paste0("./results/analysis/beyondcell_ranked.rds"))
