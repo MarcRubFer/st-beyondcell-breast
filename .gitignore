@@ -8,6 +8,7 @@ st-beyondcell-breast.Rproj
 
 # Project directories and files
 data/
+results/
 results/analysis
 results/ggplots
 results/filtering
