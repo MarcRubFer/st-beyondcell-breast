@@ -121,7 +121,7 @@ patch.props <- prop2_prop1 / prop3_prop1 / prop4_prop1
 # doublet, triplet or mixed).
 
 cell.type <- cell.type %>%
-  mutate(spot.composition = case_when(Cell.Type == "Pure_Tumour" ~ Cell.Type,
+  mutate(spot.composition = case_when(Cancer.Epithelial > 0.65 ~ "Pure_Tumour",
                                       prop_celltype_2 < 0.5 ~ main_celltype_1,
                                       (prop_celltype_2 > 0.5 & prop_celltype_3 < 0.5) ~ paste(main_celltype_1,main_celltype_2, sep = "+"),
                                       prop_celltype_3 > 0.5 ~ paste(main_celltype_1,main_celltype_2,main_celltype_3, sep = "+"),
@@ -129,7 +129,7 @@ cell.type <- cell.type %>%
          spot.composition = case_when(spot.composition == "B.cells" ~ "Lymphoid",
                                       spot.composition == "T.cells" ~ "Lymphoid",
                                       TRUE ~ spot.composition),
-         cat.spot.composition = case_when(Cell.Type == "Pure_Tumour" ~ "Unique",
+         cat.spot.composition = case_when(spot.composition == "Pure_Tumour" ~ "Unique",
                                           prop_celltype_2 < 0.5 ~ "Unique",
                                           (prop_celltype_2 > 0.5 & prop_celltype_3 < 0.5) ~ "Doublet",
                                           prop_celltype_3 > 0.5 ~ "Triplet",
@@ -164,7 +164,17 @@ mixed_graph
 
 patch.spot.comp <- (unique_graph | doublet_graph) / (triplet_graph | mixed_graph)
 
-# Note: based on the methodology to create levels, some of them have the same 
+# Note:
+# 1) Due to threshold of "pure tumour" some spots are unique for "cancer epithelial"
+# but not are pure tumour. For this spots, we decided to re-convert them into "Doublet"
+
+cell.type <- cell.type %>%
+  mutate(spot.composition.res = case_when(spot.composition == "Cancer.Epithelial" ~ paste0(main_celltype_1,"+",main_celltype_2),
+                                      TRUE ~ spot.composition),
+         cat.spot.composition.res = case_when(spot.composition == "Cancer.Epithelial" ~ "Doublet",
+                                          TRUE ~cat.spot.composition))
+
+# 2)based on the methodology to create levels, some of them have the same 
 # items but in different order. So, we depurate to collapse these levels in the same
 # levels.
 
@@ -173,67 +183,80 @@ patch.spot.comp <- (unique_graph | doublet_graph) / (triplet_graph | mixed_graph
 #   2) Sort each element by alphabetic order (function map - purrr package)
 #   3) Concate sorted elements with symbol "+" (function map_chr)
 cell.type <- cell.type %>%
-  mutate(spot.composition.dep = spot.composition %>%
+  mutate(spot.composition.dep = spot.composition.res %>%
            str_split("\\+") %>%
            map(sort) %>%
            map_chr(paste, collapse = "+"))
 
 # Replot depurated data
+unique_graph2 <- cell.type %>%
+  filter(cat.spot.composition.res == "Unique") %>%
+  ggplot(aes(y=spot.composition)) +
+  geom_bar() +
+  ggtitle("Composition of unique spots")
+unique_graph2
 doublet_graph2 <- cell.type %>%
-  filter(cat.spot.composition == "Doublet") %>%
+  filter(cat.spot.composition.res == "Doublet") %>%
   ggplot(aes(y=spot.composition.dep)) +
   geom_bar() +
   ggtitle("Composition of doublet spots (dep)")
 doublet_graph2
 triplet_graph2 <- cell.type %>%
-  filter(cat.spot.composition == "Triplet") %>%
+  filter(cat.spot.composition.res == "Triplet") %>%
   ggplot(aes(y=spot.composition.dep)) +
   geom_bar() +
   ggtitle("Composition of triplet spots (dep)")
 triplet_graph2
 
-patch.spot.dep <- (unique_graph | doublet_graph2) / (triplet_graph2 | mixed_graph)
+patch.spot.dep <- (unique_graph2 | doublet_graph2) / (triplet_graph2 | mixed_graph)
 
 # Note: After analysis of depurated levels we observe that many of them contains
-# a few number of spots. So, we decided to filter them stablishing a threshold in 25 spots
+# a few number of spots. So, we decided to filter them stablishing a threshold in 50 spots
 
-# Calculate frequency of each level and get the levels with less than 25 spots
+# Calculate frequency of each level and get the levels with less than 50 spots
 freq.spot.comp.dep <- table(cell.type$spot.composition.dep)
-spot.less25 <- names(freq.spot.comp.dep[freq.spot.comp.dep < 20])
+spot.less20 <- names(freq.spot.comp.dep[freq.spot.comp.dep < 20])
 
-# Filter and recategorize these spots to mixed category
+# Filter and recategorize these spots to doublet category
 cell.type <- cell.type %>%
-  mutate(spot.composition.filter = ifelse(test = spot.composition.dep %in% spot.less25, yes = "Mixed", no = spot.composition.dep),
-         cat.spot.composition = ifelse(test = spot.composition.filter == "Mixed", yes = "Mixed", no = cat.spot.composition))
+  mutate(spot.composition.filter = ifelse(test = spot.composition.dep %in% spot.less20, yes = paste0(main_celltype_1,"+",main_celltype_2), no = spot.composition.dep),
+         cat.spot.composition.res = ifelse(test = spot.composition.dep %in% spot.less20, yes = "Doublet", no = cat.spot.composition.res))
+cell.type <- cell.type %>%
+  mutate(spot.composition.filter = spot.composition.filter %>%
+           str_split("\\+") %>%
+           map(sort) %>%
+           map_chr(paste, collapse = "+"))
 head(cell.type)
 
 # Plot filtered results
 unique_graph3 <- cell.type %>%
-  filter(cat.spot.composition == "Unique") %>%
+  filter(cat.spot.composition.res == "Unique") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of unique spots (filtered)")
 unique_graph3
 doublet_graph3 <- cell.type %>%
-  filter(cat.spot.composition == "Doublet") %>%
+  filter(cat.spot.composition.res == "Doublet") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of doublet spots (filtered)")
 doublet_graph3
 triplet_graph3 <- cell.type %>%
-  filter(cat.spot.composition == "Triplet") %>%
+  filter(cat.spot.composition.res == "Triplet") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of triplet spots (filtered)")
 triplet_graph3
 mixed_graph3 <- cell.type %>%
-  filter(cat.spot.composition == "Mixed") %>%
+  filter(cat.spot.composition.res == "Mixed") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Number of mixed spots (filtered)")
 mixed_graph3
 
 patch.spot.filtered <- (unique_graph3 | doublet_graph3) / (triplet_graph3 | mixed_graph3)
+
+head(cell.type)
 
 # Create metadata from cell types 1,2,3 and their relationships, spot comp filtered and categorical spot composition
 metadata <- cell.type %>%
@@ -244,7 +267,7 @@ metadata <- cell.type %>%
          main_celltype_3,
          prop_celltype_3,
          spot.composition.filter,
-         cat.spot.composition)
+         cat.spot.composition.res)
 
 # Add metadata to new seuratobject
 seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
