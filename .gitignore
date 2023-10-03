@@ -2,6 +2,7 @@
 .DS_Store
 
 # R files
+.RData
 .Rproj.user
 .Rhistory
 st-beyondcell-breast.Rproj
