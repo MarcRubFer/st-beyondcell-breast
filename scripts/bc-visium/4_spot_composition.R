@@ -23,18 +23,18 @@ cell.type <- seuratobj.deconvoluted@meta.data %>%
 head(cell.type)
 
 # Reanalysis of first categorization
-cell.type <- cell.type %>%
-  mutate(Cell.Type = case_when(Cell.Type == "Tumour" ~ "Pure_Tumour",
-                                (Cell.Type == "CAFs" & Cancer.Epithelial > 0.4 ~ "Tumour_from_CAF"),
-                                (Cell.Type == "Others" & Cancer.Epithelial > 0.4 ~ "Tumour_from_Others"),
-                                Cell.Type == "CAFs" ~ "CAFs",
-                                Cell.Type == "Others" ~ "Others"))
-
-table <- data.frame(table(factor(cell.type$Cell.Type))) %>%
-  arrange(desc(Freq))
-table
-ggplot(data = cell.type, aes(x=Cell.Type)) +
-  geom_bar()
+#cell.type <- cell.type %>%
+#  mutate(Cell.Type = case_when(Cell.Type == "Tumour" ~ "Pure_Tumour",
+#                                (Cell.Type == "CAFs" & Cancer.Epithelial > 0.4 ~ "Tumour_from_CAF"),
+#                                (Cell.Type == "Others" & Cancer.Epithelial > 0.4 ~ "Tumour_from_Others"),
+#                                Cell.Type == "CAFs" ~ "CAFs",
+#                                Cell.Type == "Others" ~ "Others"))
+#
+#table <- data.frame(table(factor(cell.type$Cell.Type))) %>%
+#  arrange(desc(Freq))
+#table
+#ggplot(data = cell.type, aes(x=Cell.Type)) +
+#  geom_bar()
 
 # Collapse proportions of B.cells and T.cells in Lymphoid
 cell.type <- cell.type %>%
@@ -211,9 +211,9 @@ triplet_graph2
 patch.spot.dep <- (unique_graph2 | doublet_graph2) / (triplet_graph2 | mixed_graph)
 
 # Note: After analysis of depurated levels we observe that many of them contains
-# a few number of spots. So, we decided to filter them stablishing a threshold in 50 spots
+# a few number of spots. So, we decided to filter them stablishing a threshold in 20 spots
 
-# Calculate frequency of each level and get the levels with less than 50 spots
+# Calculate frequency of each level and get the levels with less than 20 spots
 freq.spot.comp.dep <- table(cell.type$spot.composition.dep)
 spot.less20 <- names(freq.spot.comp.dep[freq.spot.comp.dep < 20])
 
@@ -275,6 +275,26 @@ head(seuratobj.spotcomp@meta.data)
 
 
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.composition.filter", combine = T) 
+
+# Subset Pure_tumour spots
+Idents(seuratobj.spotcomp) <- "spot.composition.filter"
+pure.tumour <- subset(seuratobj.spotcomp, idents = "Pure_Tumour")
+pure.cell.prop <- pure.tumour@meta.data %>%
+  select(B.cells:T.cells) %>%
+  pivot_longer(cols = everything(), names_to = "cell.type", values_to = "prop.cell.type") %>%
+  mutate(cell.type = as.factor(cell.type),
+         prop.cell.type = round(prop.cell.type, digits = 2))
+
+p <- SpatialDimPlot(pure.tumour, ncol = 2)
+p[[1]] <- p[[1]] + theme(legend.position = "none")
+p[[2]] <- p[[2]] + theme(legend.position = "none")
+q <- ggplot(pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+  geom_jitter(alpha =0.2) +
+  geom_boxplot(outlier.shape = NA)
+
+r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs","Myeloid"), ncol = 6)
+
+patch <- (p | q) / r
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/spot_composition/"), recursive = TRUE)
