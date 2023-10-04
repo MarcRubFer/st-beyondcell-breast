@@ -4,6 +4,7 @@ library("Seurat")
 library("tidyverse")
 library("patchwork")
 library("ggsci")
+library("RColorBrewer")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -258,6 +259,50 @@ patch.spot.filtered <- (unique_graph3 | doublet_graph3) / (triplet_graph3 | mixe
 
 head(cell.type)
 
+# Collapse categories
+freq.spot.comp.collapse <- table(cell.type$spot.composition.filter)
+spot.less100 <- names(freq.spot.comp.collapse[freq.spot.comp.collapse < 100])
+## Exclude lymphoid (due to biological interest)
+cell.type <- cell.type %>%
+  mutate(spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100, yes = "Other", no = spot.composition.filter),
+         cat.spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100, yes = "Unique", no = cat.spot.composition.res))
+
+unique_graph4 <- cell.type %>%
+  filter(cat.spot.composition.collapse == "Unique") %>%
+  ggplot(aes(y=spot.composition.collapse)) +
+  geom_bar() +
+  ggtitle("Composition of unique spots (collapsed)")
+unique_graph4
+doublet_graph4 <- cell.type %>%
+  filter(cat.spot.composition.collapse == "Doublet") %>%
+  ggplot(aes(y=spot.composition.collapse)) +
+  geom_bar() +
+  ggtitle("Composition of doublet spots (collapsed)")
+doublet_graph4
+triplet_graph4 <- cell.type %>%
+  filter(cat.spot.composition.collapse == "Triplet") %>%
+  ggplot(aes(y=spot.composition.collapse)) +
+  geom_bar() +
+  ggtitle("Composition of triplet spots (collapsed)")
+triplet_graph4
+mixed_graph3 <- cell.type %>%
+  filter(cat.spot.composition.res == "Mixed") %>%
+  ggplot(aes(y=spot.composition.filter)) +
+  geom_bar() +
+  ggtitle("Number of mixed spots (filtered)")
+mixed_graph3
+
+patch.spot.collapsed <- (unique_graph4 | doublet_graph4) / (triplet_graph4 | plot_spacer())
+patch.spot.collapsed
+
+collapsed.graph <- cell.type %>%
+  ggplot(aes(y=spot.composition.collapse)) +
+  geom_bar()
+
+prueba <- cell.type %>%
+  filter(spot.composition.collapse == "Other") %>%
+  ggplot(aes(y=spot.composition.filter)) +
+  geom_bar()
 # Create metadata from cell types 1,2,3 and their relationships, spot comp filtered and categorical spot composition
 metadata <- cell.type %>%
   select(main_celltype_1,
@@ -266,35 +311,100 @@ metadata <- cell.type %>%
          prop_celltype_2,
          main_celltype_3,
          prop_celltype_3,
-         spot.composition.filter,
-         cat.spot.composition.res)
+         spot.composition.collapse,
+         cat.spot.composition.collapse)
 
 # Add metadata to new seuratobject
 seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
 head(seuratobj.spotcomp@meta.data)
 
+colors <- toupper(c("#4fafe3",
+                    "#4e3f41",
+                    "#bca251",
+                    "#7ec967",
+                    "#9451b2",
+                    "#c4534e"))
+levels.spot.comp <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
+names(colors) <- levels.spot.comp
 
-spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.composition.filter", combine = T) 
+spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.composition.collapse", combine = F) 
+spatial.distrib.spotcomp <- lapply(X = seq_along(spatial.distrib.spotcomp), FUN = function(x) {
+  spatial.distrib.spotcomp[[x]] +
+    scale_fill_manual(values = colors)
+  
+})
+spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp)
+spatial.distrib.spotcomp
 
 # Subset Pure_tumour spots
 Idents(seuratobj.spotcomp) <- "spot.composition.filter"
 pure.tumour <- subset(seuratobj.spotcomp, idents = "Pure_Tumour")
+
 pure.cell.prop <- pure.tumour@meta.data %>%
   select(B.cells:T.cells) %>%
   pivot_longer(cols = everything(), names_to = "cell.type", values_to = "prop.cell.type") %>%
   mutate(cell.type = as.factor(cell.type),
          prop.cell.type = round(prop.cell.type, digits = 2))
 
-p <- SpatialDimPlot(pure.tumour, ncol = 2)
-p[[1]] <- p[[1]] + theme(legend.position = "none")
-p[[2]] <- p[[2]] + theme(legend.position = "none")
-q <- ggplot(pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+p <- SpatialDimPlot(pure.tumour, ncol = 2, combine = F) 
+p <- lapply(X = seq_along(p), FUN = function(i) {
+  p[[i]] +
+    scale_fill_manual(values = colors)
+})
+p <- wrap_plots(p)
+p <- p + plot_layout(guides = "collect") &
+  theme(legend.position = "top")
+p[[2]] <- p[[2]] +
+  theme(legend.position = "none")
+
+q <- pure.cell.prop %>%
+  filter(prop.cell.type > 0.00) %>%
+  ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+  #geom_violin(scale = "count", trim = F) #+
+  #geom_jitter(alpha =0.2) +
+  geom_boxplot()
+
+SpatialColors <- colorRampPalette(colors = rev(x = brewer.pal(n = 11, name = "Spectral")))
+r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid"), ncol = 2, combine = F) 
+#r <- SpatialFeaturePlot(pure.tumour, features = c("CAFs"), ncol = 2, combine = F) 
+r <- lapply(X=seq_along(r), FUN = function(i){
+  r[[i]]  +
+    scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+    ggtitle(c("Hello","world")) +
+    theme(legend.title = element_blank(),
+          legend.direction = "vertical") 
+})
+r <- wrap_plots(r, ncol = 2, nrow = 3)
+r + plot_layout(guides = "collect")
+patch <- (p / q) | r
+patch
+
+# Subset non-pure tumour spots
+spot.composition <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.filter))
+non.pure.spots <- spot.composition[spot.composition != "Pure_Tumour"]
+non.pure.tumour <- subset(seuratobj.spotcomp, idents = non.pure.spots)
+non.pure.cell.prop <- non.pure.tumour@meta.data %>%
+  select(B.cells:T.cells) %>%
+  pivot_longer(cols = everything(), names_to = "cell.type", values_to = "prop.cell.type") %>%
+  mutate(cell.type = as.factor(cell.type),
+         prop.cell.type = round(prop.cell.type, digits = 2))
+
+p2 <- SpatialDimPlot(non.pure.tumour, ncol = 2)
+
+p2 <- p2 + plot_layout(guides = "collect") &
+  theme(legend.position = "bottom")
+p2[[2]] <- p2[[2]] +
+  theme(legend.position = "none")
+p2
+q2 <- ggplot(non.pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
   geom_jitter(alpha =0.2) +
-  geom_boxplot(outlier.shape = NA)
+  geom_boxplot(outlier.shape = NA) +
+  ylim(0.0,1.0)
+r2 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), ncol = 4) 
 
-r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs","Myeloid"), ncol = 6)
-
-patch <- (p | q) / r
+r2.1 <- SpatialFeaturePlot(non.pure.tumour, features = c("B.cells","T.cells","Endothelial"), ncol = 4) 
+patch2 <- (p2 / q2) | (r2)
+patch2
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/spot_composition/"), recursive = TRUE)
