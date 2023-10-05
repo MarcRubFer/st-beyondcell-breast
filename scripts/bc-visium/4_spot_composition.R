@@ -5,6 +5,7 @@ library("tidyverse")
 library("patchwork")
 library("ggsci")
 library("RColorBrewer")
+library("ggplotify")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -299,10 +300,7 @@ collapsed.graph <- cell.type %>%
   ggplot(aes(y=spot.composition.collapse)) +
   geom_bar()
 
-prueba <- cell.type %>%
-  filter(spot.composition.collapse == "Other") %>%
-  ggplot(aes(y=spot.composition.filter)) +
-  geom_bar()
+
 # Create metadata from cell types 1,2,3 and their relationships, spot comp filtered and categorical spot composition
 metadata <- cell.type %>%
   select(main_celltype_1,
@@ -319,10 +317,10 @@ seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
 head(seuratobj.spotcomp@meta.data)
 
 colors <- toupper(c("#4fafe3",
-                    "#4e3f41",
-                    "#bca251",
+                    "#be7adc",
+                    "#dec36f",
                     "#7ec967",
-                    "#9451b2",
+                    "#79696B",
                     "#c4534e"))
 levels.spot.comp <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
 names(colors) <- levels.spot.comp
@@ -333,16 +331,28 @@ spatial.distrib.spotcomp <- lapply(X = seq_along(spatial.distrib.spotcomp), FUN 
     scale_fill_manual(values = colors)
   
 })
-spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp)
-spatial.distrib.spotcomp
+spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp, ncol = 1) +
+  plot_layout(guides = "collect") & theme(legend.position = "none")
+
+collapsed.graph <- cell.type %>%
+  ggplot(aes(y=spot.composition.collapse)) +
+  geom_bar(aes(fill=spot.composition.collapse)) +
+  scale_fill_manual(values = colors)
+
+other.group.barplot <- cell.type %>%
+  filter(spot.composition.collapse == "Other") %>%
+  ggplot(aes(y=spot.composition.filter)) +
+  geom_bar(fill = colors["Other"])
+
+(collapsed.graph / other.group.barplot) | spatial.distrib.spotcomp
 
 # Subset Pure_tumour spots
-Idents(seuratobj.spotcomp) <- "spot.composition.filter"
+Idents(seuratobj.spotcomp) <- "spot.composition.collapse"
 pure.tumour <- subset(seuratobj.spotcomp, idents = "Pure_Tumour")
 
 pure.cell.prop <- pure.tumour@meta.data %>%
-  select(B.cells:T.cells) %>%
-  pivot_longer(cols = everything(), names_to = "cell.type", values_to = "prop.cell.type") %>%
+  select(B.cells:T.cells,spot.composition.collapse) %>%
+  pivot_longer(cols = B.cells:T.cells, names_to = "cell.type", values_to = "prop.cell.type") %>%
   mutate(cell.type = as.factor(cell.type),
          prop.cell.type = round(prop.cell.type, digits = 2))
 
@@ -353,57 +363,118 @@ p <- lapply(X = seq_along(p), FUN = function(i) {
 })
 p <- wrap_plots(p)
 p <- p + plot_layout(guides = "collect") &
-  theme(legend.position = "top")
+  theme(legend.position = "bottom")
 p[[2]] <- p[[2]] +
   theme(legend.position = "none")
-
+p
 q <- pure.cell.prop %>%
-  filter(prop.cell.type > 0.00) %>%
   ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
   #geom_violin(scale = "count", trim = F) #+
   #geom_jitter(alpha =0.2) +
-  geom_boxplot()
-
+  geom_boxplot() +
+  facet_grid(~spot.composition.collapse) +
+  theme(strip.background = element_rect(fill = colors["Pure_Tumour"]))
+q
 SpatialColors <- colorRampPalette(colors = rev(x = brewer.pal(n = 11, name = "Spectral")))
 r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid"), ncol = 2, combine = F) 
-#r <- SpatialFeaturePlot(pure.tumour, features = c("CAFs"), ncol = 2, combine = F) 
+
+selected.cell.types <- rep(c("Cancer Epithelial","CAFs", "Myeloid"), each=2)
+sections <- rep(c("Section 1","Section 2"), length = length(selected.cell.types))
 r <- lapply(X=seq_along(r), FUN = function(i){
-  r[[i]]  +
-    scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
-    ggtitle(c("Hello","world")) +
-    theme(legend.title = element_blank(),
-          legend.direction = "vertical") 
+  if (i <=2) {
+    r[[i]]  +
+      scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+      ggtitle(label = sections[i], subtitle = selected.cell.types[i]) +
+      theme(legend.title = element_blank(),
+            legend.direction = "vertical",
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5))
+  }else{
+    r[[i]]  +
+      scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+      ggtitle(label = NULL, subtitle = selected.cell.types[i]) +
+      theme(legend.title = element_blank(),
+            legend.direction = "vertical",
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5))
+  }
+   
 })
 r <- wrap_plots(r, ncol = 2, nrow = 3)
-r + plot_layout(guides = "collect")
+r <- r + plot_layout(guides = "collect")
+
 patch <- (p / q) | r
 patch
 
 # Subset non-pure tumour spots
-spot.composition <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.filter))
+spot.composition <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
 non.pure.spots <- spot.composition[spot.composition != "Pure_Tumour"]
 non.pure.tumour <- subset(seuratobj.spotcomp, idents = non.pure.spots)
 non.pure.cell.prop <- non.pure.tumour@meta.data %>%
-  select(B.cells:T.cells) %>%
-  pivot_longer(cols = everything(), names_to = "cell.type", values_to = "prop.cell.type") %>%
-  mutate(cell.type = as.factor(cell.type),
+  select(B.cells:T.cells,spot.composition.collapse) %>%
+  pivot_longer(cols = B.cells:T.cells, names_to = "cell.type", values_to = "prop.cell.type") %>%
+  mutate(spot.composition.collapse = as.factor(spot.composition.collapse),
+         cell.type = as.factor(cell.type),
          prop.cell.type = round(prop.cell.type, digits = 2))
 
-p2 <- SpatialDimPlot(non.pure.tumour, ncol = 2)
-
+p2 <- SpatialDimPlot(non.pure.tumour, ncol = 2, combine = F, image.alpha = 0.7)
+p2 <- lapply(X = seq_along(p2), FUN = function(i) {
+  p2[[i]] +
+    scale_fill_manual(values = colors)
+})
+p2 <- wrap_plots(p2)
 p2 <- p2 + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
-p2[[2]] <- p2[[2]] +
-  theme(legend.position = "none")
 p2
-q2 <- ggplot(non.pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
-  geom_jitter(alpha =0.2) +
-  geom_boxplot(outlier.shape = NA) +
-  ylim(0.0,1.0)
-r2 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), ncol = 4) 
 
-r2.1 <- SpatialFeaturePlot(non.pure.tumour, features = c("B.cells","T.cells","Endothelial"), ncol = 4) 
-patch2 <- (p2 / q2) | (r2)
+q2 <- ggplot(non.pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+  geom_boxplot() +
+  xlab(NULL) +
+  ylim(0.0,1.0) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank()) + 
+  facet_grid(~ spot.composition.collapse) +
+  theme(strip.text = element_text(size = 6,
+                                  face = "bold"))
+q2
+
+gt<-ggplot_gtable(ggplot_build(q2))
+strips <- which(startsWith(gt$layout$name,'strip'))
+for (s in seq_along(strips)) {
+  gt$grobs[[strips[s]]]$grobs[[1]]$children[[1]]$gp$fill <- colors[s]
+}
+q2 <- plot(gt)
+q2 <- as.ggplot(gt)
+q2
+
+r2 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), ncol = 4, combine = F) 
+selected.non.pure <- rep(c("Cancer Epithelial","CAFs", "Myeloid","B cells","T cells","Endothelial"),each = 2)
+sections.non.pure <- rep(c("Section 1","Section 2"), length = length(selected.non.pure))
+
+r2 <- lapply(X=seq_along(r2), FUN = function(i){
+  if (i <=4) {
+    r2[[i]]  +
+      scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+      ggtitle(label = sections[i], subtitle = selected.non.pure[i]) +
+      theme(legend.title = element_blank(),
+            legend.direction = "vertical",
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5))
+  }else{
+    r2[[i]]  +
+      scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+      ggtitle(label = NULL, subtitle = selected.non.pure[i]) +
+      theme(legend.title = element_blank(),
+            legend.direction = "vertical",
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5))
+  }
+  
+})
+r2 <- wrap_plots(r2, ncol = 4, nrow = 3)
+r2 <- r2 + plot_layout(guides = "collect")
+
+patch2 <- ((p2 / q2) | (r2)) 
 patch2
 
 # Save plots and ggplots
