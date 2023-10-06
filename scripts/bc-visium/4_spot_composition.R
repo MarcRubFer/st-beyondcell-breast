@@ -21,30 +21,17 @@ head(seuratobj.deconvoluted@meta.data)
 
 # Subset cell types proportions metadata
 cell.type <- seuratobj.deconvoluted@meta.data %>%
-  select(c("B.cells","CAFs","Cancer.Epithelial","Endothelial","Myeloid","Normal.Epithelial","Plasmablasts","PVL","T.cells","Cell.Type"))
+  select(B.cells:T.cells)
 head(cell.type)
-
-# Reanalysis of first categorization
-#cell.type <- cell.type %>%
-#  mutate(Cell.Type = case_when(Cell.Type == "Tumour" ~ "Pure_Tumour",
-#                                (Cell.Type == "CAFs" & Cancer.Epithelial > 0.4 ~ "Tumour_from_CAF"),
-#                                (Cell.Type == "Others" & Cancer.Epithelial > 0.4 ~ "Tumour_from_Others"),
-#                                Cell.Type == "CAFs" ~ "CAFs",
-#                                Cell.Type == "Others" ~ "Others"))
-#
-#table <- data.frame(table(factor(cell.type$Cell.Type))) %>%
-#  arrange(desc(Freq))
-#table
-#ggplot(data = cell.type, aes(x=Cell.Type)) +
-#  geom_bar()
 
 # Collapse proportions of B.cells and T.cells in Lymphoid
 cell.type <- cell.type %>%
   mutate(Lymphoid = B.cells + T.cells,
          B.cells = NULL,
          T.cells = NULL) %>%
-  relocate(Lymphoid, .before = Cell.Type)
+  relocate(Lymphoid, .after = PVL)
 head(cell.type)
+
 # Calculate ranked cell types in each spot (first, second, ...) and its
 # relation with the first cell type (prop.celltype.x / prop.celltype1)
 filas <- 1:nrow(cell.type)
@@ -123,20 +110,22 @@ patch.props <- prop2_prop1 / prop3_prop1 / prop4_prop1
 # doublet, triplet or mixed).
 
 cell.type <- cell.type %>%
-  mutate(spot.composition = case_when(Cancer.Epithelial > 0.65 ~ "Pure_Tumour",
-                                      prop_celltype_2 < 0.5 ~ main_celltype_1,
-                                      (prop_celltype_2 > 0.5 & prop_celltype_3 < 0.5) ~ paste(main_celltype_1,main_celltype_2, sep = "+"),
-                                      prop_celltype_3 > 0.5 ~ paste(main_celltype_1,main_celltype_2,main_celltype_3, sep = "+"),
+  mutate(spot.composition = case_when(Cancer.Epithelial > 0.65 ~ toupper("Pure Tumour"),
+                                      prop_celltype_2 < 0.5 ~ toupper(main_celltype_1),
+                                      (prop_celltype_2 > 0.5 & prop_celltype_3 < 0.5) ~ toupper(paste(main_celltype_1,main_celltype_2, sep = "+")),
+                                      prop_celltype_3 > 0.5 ~ toupper(paste(main_celltype_1,main_celltype_2,main_celltype_3, sep = "+")),
                                       TRUE ~ "Mixed"),
-         spot.composition = case_when(spot.composition == "B.cells" ~ "Lymphoid",
-                                      spot.composition == "T.cells" ~ "Lymphoid",
-                                      TRUE ~ spot.composition),
-         cat.spot.composition = case_when(spot.composition == "Pure_Tumour" ~ "Unique",
+         spot.composition = gsub(pattern = "\\.", replacement = " ", spot.composition),
+         #spot.composition = case_when(spot.composition == "B.cells" ~ toupper("Lymphoid"),
+         #                             spot.composition == "T.cells" ~ toupper("Lymphoid"),
+         #                             spot.composition == toupper("Cancer.Epithelial") ~ toupper("Cancer Epithelial"),
+         #                             TRUE ~ spot.composition),
+         cat.spot.composition = case_when(spot.composition == toupper("Pure Tumour") ~ "Unique",
                                           prop_celltype_2 < 0.5 ~ "Unique",
                                           (prop_celltype_2 > 0.5 & prop_celltype_3 < 0.5) ~ "Doublet",
                                           prop_celltype_3 > 0.5 ~ "Triplet",
                                           TRUE ~ "Mixed"))
-
+head(cell.type)
 # Plot by categorical the type of composition and the number of spots in each level
 
 unique_graph <- cell.type %>%
@@ -171,11 +160,12 @@ patch.spot.comp <- (unique_graph | doublet_graph) / (triplet_graph | mixed_graph
 # but not are pure tumour. For this spots, we decided to re-convert them into "Doublet"
 
 cell.type <- cell.type %>%
-  mutate(spot.composition.res = case_when(spot.composition == "Cancer.Epithelial" ~ paste0(main_celltype_1,"+",main_celltype_2),
+  mutate(spot.composition.res = case_when(spot.composition == toupper("Cancer Epithelial") ~ toupper(paste(main_celltype_1,main_celltype_2, sep = "+")),
                                       TRUE ~ spot.composition),
-         cat.spot.composition.res = case_when(spot.composition == "Cancer.Epithelial" ~ "Doublet",
+         spot.composition.res = gsub(pattern = "\\.", replacement = " ", spot.composition.res),
+         cat.spot.composition.res = case_when(spot.composition == toupper("Cancer Epithelial") ~ "Doublet",
                                           TRUE ~cat.spot.composition))
-
+head(cell.type, n=10)
 # 2)based on the methodology to create levels, some of them have the same 
 # items but in different order. So, we depurate to collapse these levels in the same
 # levels.
@@ -184,28 +174,28 @@ cell.type <- cell.type %>%
 #   1) Split each level by symbol "+"
 #   2) Sort each element by alphabetic order (function map - purrr package)
 #   3) Concate sorted elements with symbol "+" (function map_chr)
-cell.type <- cell.type %>%
-  mutate(spot.composition.dep = spot.composition.res %>%
-           str_split("\\+") %>%
-           map(sort) %>%
-           map_chr(paste, collapse = "+"))
+#####cell.type <- cell.type %>%
+#####  mutate(spot.composition.dep = spot.composition.res %>%
+#####           str_split("\\+") %>%
+#####           map(sort) %>%
+#####           map_chr(paste, collapse = " + "))
 
 # Replot depurated data
 unique_graph2 <- cell.type %>%
   filter(cat.spot.composition.res == "Unique") %>%
-  ggplot(aes(y=spot.composition)) +
+  ggplot(aes(y=spot.composition.res)) +
   geom_bar() +
   ggtitle("Composition of unique spots")
 unique_graph2
 doublet_graph2 <- cell.type %>%
   filter(cat.spot.composition.res == "Doublet") %>%
-  ggplot(aes(y=spot.composition.dep)) +
+  ggplot(aes(y=spot.composition.res)) +
   geom_bar() +
   ggtitle("Composition of doublet spots (dep)")
 doublet_graph2
 triplet_graph2 <- cell.type %>%
   filter(cat.spot.composition.res == "Triplet") %>%
-  ggplot(aes(y=spot.composition.dep)) +
+  ggplot(aes(y=spot.composition.res)) +
   geom_bar() +
   ggtitle("Composition of triplet spots (dep)")
 triplet_graph2
@@ -216,13 +206,14 @@ patch.spot.dep <- (unique_graph2 | doublet_graph2) / (triplet_graph2 | mixed_gra
 # a few number of spots. So, we decided to filter them stablishing a threshold in 20 spots
 
 # Calculate frequency of each level and get the levels with less than 20 spots
-freq.spot.comp.dep <- table(cell.type$spot.composition.dep)
-spot.less20 <- names(freq.spot.comp.dep[freq.spot.comp.dep < 20])
+freq.spot.comp.res <- table(cell.type$spot.composition.res)
+spot.less20 <- names(freq.spot.comp.res[freq.spot.comp.res < 20])
 
 # Filter and recategorize these spots to doublet category
 cell.type <- cell.type %>%
-  mutate(spot.composition.filter = ifelse(test = spot.composition.dep %in% spot.less20, yes = paste0(main_celltype_1,"+",main_celltype_2), no = spot.composition.dep),
-         cat.spot.composition.res = ifelse(test = spot.composition.dep %in% spot.less20, yes = "Doublet", no = cat.spot.composition.res))
+  mutate(spot.composition.filter = ifelse(test = spot.composition.res %in% spot.less20, yes = toupper(paste0(main_celltype_1,"+",main_celltype_2)), no = spot.composition.res),
+         spot.composition.filter = gsub(pattern = "\\.", replacement = " ", spot.composition.filter),
+         cat.spot.composition.filter = ifelse(test = spot.composition.res %in% spot.less20, yes = "Doublet", no = cat.spot.composition.res))
 cell.type <- cell.type %>%
   mutate(spot.composition.filter = spot.composition.filter %>%
            str_split("\\+") %>%
@@ -232,19 +223,19 @@ head(cell.type)
 
 # Plot filtered results
 unique_graph3 <- cell.type %>%
-  filter(cat.spot.composition.res == "Unique") %>%
+  filter(cat.spot.composition.filter == "Unique") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of unique spots (filtered)")
 unique_graph3
 doublet_graph3 <- cell.type %>%
-  filter(cat.spot.composition.res == "Doublet") %>%
+  filter(cat.spot.composition.filter == "Doublet") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of doublet spots (filtered)")
 doublet_graph3
 triplet_graph3 <- cell.type %>%
-  filter(cat.spot.composition.res == "Triplet") %>%
+  filter(cat.spot.composition.filter == "Triplet") %>%
   ggplot(aes(y=spot.composition.filter)) +
   geom_bar() +
   ggtitle("Composition of triplet spots (filtered)")
@@ -264,9 +255,10 @@ head(cell.type)
 freq.spot.comp.collapse <- table(cell.type$spot.composition.filter)
 spot.less100 <- names(freq.spot.comp.collapse[freq.spot.comp.collapse < 100])
 ## Exclude lymphoid (due to biological interest)
+spot.less100.nolymphoid <- spot.less100[which(spot.less100 != toupper("Lymphoid"))] 
 cell.type <- cell.type %>%
-  mutate(spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100, yes = "Other", no = spot.composition.filter),
-         cat.spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100, yes = "Unique", no = cat.spot.composition.res))
+  mutate(spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100.nolymphoid, yes = "OTHER", no = spot.composition.filter),
+         cat.spot.composition.collapse = ifelse(test = spot.composition.filter %in% spot.less100.nolymphoid, yes = "Unique", no = cat.spot.composition.res))
 
 unique_graph4 <- cell.type %>%
   filter(cat.spot.composition.collapse == "Unique") %>%
@@ -296,6 +288,9 @@ mixed_graph3
 patch.spot.collapsed <- (unique_graph4 | doublet_graph4) / (triplet_graph4 | plot_spacer())
 patch.spot.collapsed
 
+cell.type <- cell.type %>%
+  mutate(spot.composition.collapse = gsub(pattern = "\\+", replacement = " + ", spot.composition.collapse))
+
 collapsed.graph <- cell.type %>%
   ggplot(aes(y=spot.composition.collapse)) +
   geom_bar()
@@ -309,8 +304,7 @@ metadata <- cell.type %>%
          prop_celltype_2,
          main_celltype_3,
          prop_celltype_3,
-         spot.composition.collapse,
-         cat.spot.composition.collapse)
+         spot.composition.collapse)
 
 # Add metadata to new seuratobject
 seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
@@ -320,6 +314,7 @@ colors <- toupper(c("#4fafe3",
                     "#be7adc",
                     "#dec36f",
                     "#7ec967",
+                    "#f1703a",
                     "#79696B",
                     "#c4534e"))
 levels.spot.comp <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
@@ -340,15 +335,15 @@ collapsed.graph <- cell.type %>%
   scale_fill_manual(values = colors)
 
 other.group.barplot <- cell.type %>%
-  filter(spot.composition.collapse == "Other") %>%
+  filter(spot.composition.collapse == "OTHER") %>%
   ggplot(aes(y=spot.composition.filter)) +
-  geom_bar(fill = colors["Other"])
+  geom_bar(fill = colors["OTHER"])
 
 (collapsed.graph / other.group.barplot) | spatial.distrib.spotcomp
 
 # Subset Pure_tumour spots
 Idents(seuratobj.spotcomp) <- "spot.composition.collapse"
-pure.tumour <- subset(seuratobj.spotcomp, idents = "Pure_Tumour")
+pure.tumour <- subset(seuratobj.spotcomp, idents = "PURE TUMOUR")
 
 pure.cell.prop <- pure.tumour@meta.data %>%
   select(B.cells:T.cells,spot.composition.collapse) %>%
@@ -368,12 +363,13 @@ p[[2]] <- p[[2]] +
   theme(legend.position = "none")
 p
 q <- pure.cell.prop %>%
+  mutate(cell.type = gsub(pattern = "([B,T])\\.", replacement = "\\1-", cell.type),
+         cell.type = gsub(pattern = "\\.", replacement = " ", cell.type),
+         cell.type = toupper(cell.type)) %>%
   ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
-  #geom_violin(scale = "count", trim = F) #+
-  #geom_jitter(alpha =0.2) +
   geom_boxplot() +
   facet_grid(~spot.composition.collapse) +
-  theme(strip.background = element_rect(fill = colors["Pure_Tumour"]))
+  theme(strip.background = element_rect(fill = colors["PURE TUMOUR"]))
 q
 SpatialColors <- colorRampPalette(colors = rev(x = brewer.pal(n = 11, name = "Spectral")))
 r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid"), ncol = 2, combine = F) 
@@ -406,9 +402,11 @@ r <- r + plot_layout(guides = "collect")
 patch <- (p / q) | r
 patch
 
+((collapsed.graph | spatial.distrib.spotcomp)  / ((p[[1]] / p[[2]]) | q)) | r
+
 # Subset non-pure tumour spots
 spot.composition <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
-non.pure.spots <- spot.composition[spot.composition != "Pure_Tumour"]
+non.pure.spots <- spot.composition[spot.composition != "PURE TUMOUR"]
 non.pure.tumour <- subset(seuratobj.spotcomp, idents = non.pure.spots)
 non.pure.cell.prop <- non.pure.tumour@meta.data %>%
   select(B.cells:T.cells,spot.composition.collapse) %>%
@@ -427,7 +425,11 @@ p2 <- p2 + plot_layout(guides = "collect") &
   theme(legend.position = "bottom")
 p2
 
-q2 <- ggplot(non.pure.cell.prop, aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+q2 <- non.pure.cell.prop %>%
+  mutate(cell.type = gsub(pattern = "([B,T])\\.", replacement = "\\1-", cell.type),
+         cell.type = gsub(pattern = "\\.", replacement = " ", cell.type),
+         cell.type = toupper(cell.type)) %>%
+  ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
   geom_boxplot() +
   xlab(NULL) +
   ylim(0.0,1.0) +
