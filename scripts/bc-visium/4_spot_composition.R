@@ -71,27 +71,27 @@ cell.type <- cbind(cell.type, ranked_df)
 head(cell.type)
 
 # Subset non-pure tumour cells
-df <- cell.type %>%
-  filter(Cell.Type != "Pure_Tumour")
-head(df)
-
-# Plot distribution of relation prop.celltypex / prop.celltype1
-prop2_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_2)) +
-  geom_histogram() +
-  ggtitle("Celltype 2 / Celltype 1") +
-  theme(axis.title.x = element_blank())
-
-prop3_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_3)) +
-  geom_histogram(position = position_dodge()) +
-  ggtitle("Celltype 3 / Celltype 1") +
-  theme(axis.title.x = element_blank())
-
-prop4_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_4)) +
-  geom_histogram(position = position_dodge()) +
-  ggtitle("Celltype 4 / Celltype 1") +
-  theme(axis.title.x = element_blank()) 
-
-patch.props <- prop2_prop1 / prop3_prop1 / prop4_prop1
+#df <- cell.type %>%
+#  filter(Cell.Type != "Pure_Tumour")
+#head(df)
+#
+## Plot distribution of relation prop.celltypex / prop.celltype1
+#prop2_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_2)) +
+#  geom_histogram() +
+#  ggtitle("Celltype 2 / Celltype 1") +
+#  theme(axis.title.x = element_blank())
+#
+#prop3_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_3)) +
+#  geom_histogram(position = position_dodge()) +
+#  ggtitle("Celltype 3 / Celltype 1") +
+#  theme(axis.title.x = element_blank())
+#
+#prop4_prop1 <- ggplot(data = df, mapping = aes(x  = prop_celltype_4)) +
+#  geom_histogram(position = position_dodge()) +
+#  ggtitle("Celltype 4 / Celltype 1") +
+#  theme(axis.title.x = element_blank()) 
+#
+#patch.props <- prop2_prop1 / prop3_prop1 / prop4_prop1
 
 ###############################################################################
 # Note: after analyse distributions we stablish thresholds for unique, doublet,
@@ -157,7 +157,7 @@ patch.spot.comp <- (unique_graph | doublet_graph) / (triplet_graph | mixed_graph
 
 # Note:
 # 1) Due to threshold of "pure tumour" some spots are unique for "cancer epithelial"
-# but not are pure tumour. For this spots, we decided to re-convert them into "Doublet"
+# but not are pure tumour (<0.65). For these spots, we decided to re-convert them into "Doublet"
 
 cell.type <- cell.type %>%
   mutate(spot.composition.res = case_when(spot.composition == toupper("Cancer Epithelial") ~ toupper(paste(main_celltype_1,main_celltype_2, sep = "+")),
@@ -166,19 +166,7 @@ cell.type <- cell.type %>%
          cat.spot.composition.res = case_when(spot.composition == toupper("Cancer Epithelial") ~ "Doublet",
                                           TRUE ~cat.spot.composition))
 head(cell.type, n=10)
-# 2)based on the methodology to create levels, some of them have the same 
-# items but in different order. So, we depurate to collapse these levels in the same
-# levels.
 
-# Create variable depurated:
-#   1) Split each level by symbol "+"
-#   2) Sort each element by alphabetic order (function map - purrr package)
-#   3) Concate sorted elements with symbol "+" (function map_chr)
-#####cell.type <- cell.type %>%
-#####  mutate(spot.composition.dep = spot.composition.res %>%
-#####           str_split("\\+") %>%
-#####           map(sort) %>%
-#####           map_chr(paste, collapse = " + "))
 
 # Replot depurated data
 unique_graph2 <- cell.type %>%
@@ -251,9 +239,11 @@ patch.spot.filtered <- (unique_graph3 | doublet_graph3) / (triplet_graph3 | mixe
 
 head(cell.type)
 
-# Collapse categories
+# Collapse categories: first filter of less than 20 spots creates many categories
+# So, we decided to collapse in a new categorie ("Other") categories with less than 100 spots
 freq.spot.comp.collapse <- table(cell.type$spot.composition.filter)
 spot.less100 <- names(freq.spot.comp.collapse[freq.spot.comp.collapse < 100])
+
 ## Exclude lymphoid (due to biological interest)
 spot.less100.nolymphoid <- spot.less100[which(spot.less100 != toupper("Lymphoid"))] 
 cell.type <- cell.type %>%
@@ -296,7 +286,7 @@ collapsed.graph <- cell.type %>%
   geom_bar()
 
 
-# Create metadata from cell types 1,2,3 and their relationships, spot comp filtered and categorical spot composition
+# Create metadata from cell types 1,2,3 and their relationships and spot comp filtered 
 metadata <- cell.type %>%
   select(main_celltype_1,
          prop_celltype_1,
@@ -310,6 +300,8 @@ metadata <- cell.type %>%
 seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
 head(seuratobj.spotcomp@meta.data)
 
+# Create a named vector for a color palette with categories
+# Palette creator: https://medialab.github.io/iwanthue/
 colors <- toupper(c("#4fafe3",
                     "#be7adc",
                     "#dec36f",
@@ -320,6 +312,7 @@ colors <- toupper(c("#4fafe3",
 levels.spot.comp <- levels(as.factor(seuratobj.spotcomp@meta.data$spot.composition.collapse))
 names(colors) <- levels.spot.comp
 
+# Plot spatial distribution of categories
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.composition.collapse", combine = F) 
 spatial.distrib.spotcomp <- lapply(X = seq_along(spatial.distrib.spotcomp), FUN = function(x) {
   spatial.distrib.spotcomp[[x]] +
@@ -329,11 +322,13 @@ spatial.distrib.spotcomp <- lapply(X = seq_along(spatial.distrib.spotcomp), FUN 
 spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp, ncol = 1) +
   plot_layout(guides = "collect") & theme(legend.position = "none")
 
+# Barplot number of spots / categories
 collapsed.graph <- cell.type %>%
   ggplot(aes(y=spot.composition.collapse)) +
   geom_bar(aes(fill=spot.composition.collapse)) +
   scale_fill_manual(values = colors)
 
+# Barplot number of spots / categories only for OTHER group (supplementary figure)
 other.group.barplot <- cell.type %>%
   filter(spot.composition.collapse == "OTHER") %>%
   ggplot(aes(y=spot.composition.filter)) +
@@ -341,16 +336,19 @@ other.group.barplot <- cell.type %>%
 
 (collapsed.graph / other.group.barplot) | spatial.distrib.spotcomp
 
-# Subset Pure_tumour spots
+# Analysis in detail of pure tumor and non-pure tumour
+# Subset PURE TUMOUR spots
 Idents(seuratobj.spotcomp) <- "spot.composition.collapse"
 pure.tumour <- subset(seuratobj.spotcomp, idents = "PURE TUMOUR")
 
+# Data frame of cell type and proportion
 pure.cell.prop <- pure.tumour@meta.data %>%
   select(B.cells:T.cells,spot.composition.collapse) %>%
   pivot_longer(cols = B.cells:T.cells, names_to = "cell.type", values_to = "prop.cell.type") %>%
   mutate(cell.type = as.factor(cell.type),
          prop.cell.type = round(prop.cell.type, digits = 2))
 
+# Spatial plot of pure tumour spots
 p <- SpatialDimPlot(pure.tumour, ncol = 2, combine = F) 
 p <- lapply(X = seq_along(p), FUN = function(i) {
   p[[i]] +
@@ -358,10 +356,11 @@ p <- lapply(X = seq_along(p), FUN = function(i) {
 })
 p <- wrap_plots(p)
 p <- p + plot_layout(guides = "collect") &
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 p[[2]] <- p[[2]] +
   theme(legend.position = "none")
 p
+# Boxplot of cell type proportions in pure tumour spot
 q <- pure.cell.prop %>%
   mutate(cell.type = gsub(pattern = "([B,T])\\.", replacement = "\\1-", cell.type),
          cell.type = gsub(pattern = "\\.", replacement = " ", cell.type),
@@ -369,18 +368,29 @@ q <- pure.cell.prop %>%
   ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
   geom_boxplot() +
   facet_grid(~spot.composition.collapse) +
-  theme(strip.background = element_rect(fill = colors["PURE TUMOUR"]))
+  theme_minimal() +
+  ylab(label = "Cell type proportion") +
+  labs(fill = "Cell type") +
+  theme(strip.background = element_rect(fill = colors["PURE TUMOUR"]),
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(vjust = 1)
+        ) 
 q
+# Spatial plot of three main cell type proportions
 SpatialColors <- colorRampPalette(colors = rev(x = brewer.pal(n = 11, name = "Spectral")))
 r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid"), ncol = 2, combine = F) 
 
-selected.cell.types <- rep(c("Cancer Epithelial","CAFs", "Myeloid"), each=2)
+selected.cell.types <- toupper(rep(c("Cancer Epithelial","CAFs", "Myeloid"), each=2))
 sections <- rep(c("Section 1","Section 2"), length = length(selected.cell.types))
+## Adjust scales (0 to 1) for all plots and tag each plot
 r <- lapply(X=seq_along(r), FUN = function(i){
   if (i <=2) {
     r[[i]]  +
       scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
       ggtitle(label = sections[i], subtitle = selected.cell.types[i]) +
+      ylab(label = "Hello") +
       theme(legend.title = element_blank(),
             legend.direction = "vertical",
             plot.title = element_text(hjust = 0.5),
@@ -396,11 +406,12 @@ r <- lapply(X=seq_along(r), FUN = function(i){
   }
    
 })
-r <- wrap_plots(r, ncol = 2, nrow = 3)
+r <- wrap_plots(r, ncol = 6, nrow = 1)
 r <- r + plot_layout(guides = "collect")
+r
 
-patch <- (p / q) | r
-patch
+patch.pure.tumour <- (p | q) / r
+patch.pure.tumour
 
 ((collapsed.graph | spatial.distrib.spotcomp)  / ((p[[1]] / p[[2]]) | q)) | r
 
@@ -422,7 +433,7 @@ p2 <- lapply(X = seq_along(p2), FUN = function(i) {
 })
 p2 <- wrap_plots(p2)
 p2 <- p2 + plot_layout(guides = "collect") &
-  theme(legend.position = "bottom")
+  theme(legend.position = "right")
 p2
 
 q2 <- non.pure.cell.prop %>%
@@ -473,11 +484,13 @@ r2 <- lapply(X=seq_along(r2), FUN = function(i){
   }
   
 })
-r2 <- wrap_plots(r2, ncol = 4, nrow = 3)
+r2 <- wrap_plots(r2, ncol = 6, nrow = 2)
 r2 <- r2 + plot_layout(guides = "collect")
 
-patch2 <- ((p2 / q2) | (r2)) 
+patch2 <- ((p2 | q2) / (r2)) 
 patch2
+
+p2.dim <- get_dim(p2)
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/spot_composition/"), recursive = TRUE)
