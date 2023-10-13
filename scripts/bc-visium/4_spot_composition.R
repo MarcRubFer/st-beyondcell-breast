@@ -6,6 +6,8 @@ library("patchwork")
 library("ggsci")
 library("RColorBrewer")
 library("ggplotify")
+library("grid")
+library("cowplot")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -376,8 +378,6 @@ upper <- plot_grid(spatial.distrib.spotcomp,NULL,collapsed.graph, ncol = 3, labe
 upper
 
 plot_grid(upper,NULL,boxp.props, ncol = 1, labels = c("","","C"),rel_heights = c(1,0.01,1))
-(spatial.distrib.spotcomp | collapsed.graph) / boxp.props
-(wrap_elements(full = spatial.distrib.spotcomp) | collapsed.graph) / boxp.props
 
 # Analysis in detail of pure tumor and non-pure tumour
 # Subset PURE TUMOUR spots
@@ -397,7 +397,7 @@ p <- lapply(X = seq_along(p), FUN = function(i) {
   p[[i]] +
     scale_fill_manual(values = colors)
 })
-p <- wrap_plots(p)
+p <- wrap_plots(p, ncol = 1)
 p <- p + plot_layout(guides = "collect") &
   theme(legend.position = "right",
         legend.key.size = unit(.5, 'cm'))
@@ -425,9 +425,10 @@ q <- pure.cell.prop %>%
 q
 # Spatial plot of three main cell type proportions
 SpatialColors <- colorRampPalette(colors = rev(x = brewer.pal(n = 11, name = "Spectral")))
-r <- SpatialFeaturePlot(pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid"), ncol = 2, combine = F) 
+features <- c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial")
+r <- SpatialFeaturePlot(pure.tumour, features = features, combine = F) 
 
-selected.cell.types <- toupper(rep(c("Cancer Epithelial","CAFs", "Myeloid"), each=2))
+selected.cell.types <- toupper(rep(features, each=2))
 sections <- rep(c("Section 1","Section 2"), length = length(selected.cell.types))
 ## Adjust scales (0 to 1) for all plots and tag each plot
 r <- lapply(X=seq_along(r), FUN = function(i){
@@ -451,13 +452,34 @@ r <- lapply(X=seq_along(r), FUN = function(i){
   }
    
 })
-r <- wrap_plots(r, ncol = 6, nrow = 1)
+r <- wrap_plots(r, ncol = 6)
 r <- r + plot_layout(guides = "collect")
 r
 
 patch.pure.tumour <- (p | q) / r
 patch.pure.tumour
+(p[[1]] / p[[2]]) | r
+p <- p & theme(legend.position = "right")
+(((p|r) + plot_layout(widths = c(1.55,10))) / legend) + plot_layout(heights = c(1,0.1))
+a <- ((p|r) + plot_layout(widths = c(1.55,10)))
+legend <- get_legend(
+  p[[1]] + 
+    guides(color = guide_legend(nrow = 1)) +
+    theme(legend.position = "bottom")
+)
 
+plot_grid(a,legend, ncol = 1, rel_heights = c(10,0.1))
+plot_grid(a,a, ncol = 1, labels = "AUTO")
+grid.newpage()
+grid.draw(legend)
+
+
+r.s1 <- SpatialFeaturePlot(pure.tumour, features = features, combine = F, images = "Section1") 
+r.s2 <- SpatialFeaturePlot(pure.tumour, features = features, combine = F, images = "Section2") 
+r.s1.2 <-append(r.s1,r.s2)
+plot_grid(plotlist = r.s1.2, ncol = 6, nrow = 2)
+wrap_plots(r.s1.2, ncol = 6)
+p/(r[[1]] | r[[2]]) / (r[[1]] | r[[2]]) + plot_layout(guides = "collect")
 ((collapsed.graph | spatial.distrib.spotcomp)  / ((p[[1]] / p[[2]]) | q)) | r
 
 # Subset non-pure tumour spots
