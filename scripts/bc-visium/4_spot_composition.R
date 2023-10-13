@@ -316,16 +316,20 @@ names(colors) <- levels.spot.comp
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.composition.collapse", combine = F) 
 spatial.distrib.spotcomp <- lapply(X = seq_along(spatial.distrib.spotcomp), FUN = function(x) {
   spatial.distrib.spotcomp[[x]] +
-    scale_fill_manual(values = colors)
+    scale_fill_manual(name = "Categories",values = colors) +
+    theme(legend.key = element_blank())
   
 })
-spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp, ncol = 1) +
-  plot_layout(guides = "collect") & theme(legend.position = "none")
+spatial.distrib.spotcomp <- wrap_plots(spatial.distrib.spotcomp, ncol = 2) +
+  plot_layout(guides = "collect")
+& theme(legend.position = "none")
 
 # Barplot number of spots / categories
 collapsed.graph <- cell.type %>%
   ggplot(aes(y=spot.composition.collapse)) +
   geom_bar(aes(fill=spot.composition.collapse)) +
+  ylab(NULL) +
+  scale_y_discrete(limits = rev, labels = NULL) +
   scale_fill_manual(values = colors)
 
 # Barplot number of spots / categories only for OTHER group (supplementary figure)
@@ -335,6 +339,45 @@ other.group.barplot <- cell.type %>%
   geom_bar(fill = colors["OTHER"])
 
 (collapsed.graph / other.group.barplot) | spatial.distrib.spotcomp
+
+# Barplot
+
+prop.data <- seuratobj.spotcomp@meta.data %>%
+  select(B.cells:T.cells,spot.composition.collapse) %>%
+  pivot_longer(cols = B.cells:T.cells, names_to = "cell.type", values_to = "prop.cell.type") %>%
+  mutate(cell.type = as.factor(cell.type),
+         prop.cell.type = round(prop.cell.type, digits = 2))
+boxp.props <- prop.data %>%
+  mutate(cell.type = gsub(pattern = "([B,T])\\.", replacement = "\\1-", cell.type),
+         cell.type = gsub(pattern = "\\.", replacement = " ", cell.type),
+         cell.type = toupper(cell.type)) %>%
+  ggplot(aes(x=cell.type, y=prop.cell.type, fill=cell.type)) +
+  geom_boxplot() +
+  xlab(NULL) +
+  ylim(0.0,1.0) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "right") + 
+  facet_grid(~ spot.composition.collapse) +
+  theme(strip.text = element_text(size = 6,
+                                  face = "bold"))
+gt<-ggplot_gtable(ggplot_build(boxp.props))
+strips <- which(startsWith(gt$layout$name,'strip'))
+for (s in seq_along(strips)) {
+  gt$grobs[[strips[s]]]$grobs[[1]]$children[[1]]$gp$fill <- colors[s]
+}
+
+boxp.props <- as.ggplot(gt)
+collapsed.graph <- collapsed.graph + 
+  xlim(c(0,5000)) +
+  theme_minimal() + 
+  theme(panel.grid.major.y = element_blank(), panel.grid.major.x = element_line(colour = "grey"))
+upper <- plot_grid(spatial.distrib.spotcomp,NULL,collapsed.graph, ncol = 3, labels = c("A","","B"), rel_widths = c(1,0.01,1))
+upper
+
+plot_grid(upper,NULL,boxp.props, ncol = 1, labels = c("","","C"),rel_heights = c(1,0.01,1))
+(spatial.distrib.spotcomp | collapsed.graph) / boxp.props
+(wrap_elements(full = spatial.distrib.spotcomp) | collapsed.graph) / boxp.props
 
 # Analysis in detail of pure tumor and non-pure tumour
 # Subset PURE TUMOUR spots
@@ -356,7 +399,9 @@ p <- lapply(X = seq_along(p), FUN = function(i) {
 })
 p <- wrap_plots(p)
 p <- p + plot_layout(guides = "collect") &
-  theme(legend.position = "right")
+  theme(legend.position = "right",
+        legend.key.size = unit(.5, 'cm'))
+
 p[[2]] <- p[[2]] +
   theme(legend.position = "none")
 p
@@ -433,7 +478,7 @@ p2 <- lapply(X = seq_along(p2), FUN = function(i) {
 })
 p2 <- wrap_plots(p2)
 p2 <- p2 + plot_layout(guides = "collect") &
-  theme(legend.position = "right")
+  theme(legend.position = "bottom")
 p2
 
 q2 <- non.pure.cell.prop %>%
@@ -445,7 +490,8 @@ q2 <- non.pure.cell.prop %>%
   xlab(NULL) +
   ylim(0.0,1.0) +
   theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank()) + 
+        axis.ticks.x = element_blank(),
+        legend.position = "bottom") + 
   facet_grid(~ spot.composition.collapse) +
   theme(strip.text = element_text(size = 6,
                                   face = "bold"))
@@ -460,15 +506,15 @@ q2 <- plot(gt)
 q2 <- as.ggplot(gt)
 q2
 
-r2 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), ncol = 4, combine = F) 
+r2 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), combine = F) 
 selected.non.pure <- rep(c("Cancer Epithelial","CAFs", "Myeloid","B cells","T cells","Endothelial"),each = 2)
 sections.non.pure <- rep(c("Section 1","Section 2"), length = length(selected.non.pure))
-
+colors.text <- rep(c(scales::hue_pal()(9)), each = 2)
 r2 <- lapply(X=seq_along(r2), FUN = function(i){
-  if (i <=4) {
+  if (i %% 2 != 0) {
     r2[[i]]  +
       scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
-      ggtitle(label = sections[i], subtitle = selected.non.pure[i]) +
+      ggtitle(label = toupper(selected.non.pure[i])) +
       theme(legend.title = element_blank(),
             legend.direction = "vertical",
             plot.title = element_text(hjust = 0.5),
@@ -484,14 +530,71 @@ r2 <- lapply(X=seq_along(r2), FUN = function(i){
   }
   
 })
+
+r2 <- lapply(X=seq_along(r2), FUN = function(i){
+  r2[[i]]  +
+      scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+      ggtitle(label = toupper(selected.non.pure[i]), subtitle = sections.non.pure[i]) +
+      theme(legend.title = element_blank(),
+            legend.direction = "vertical",
+            plot.title = element_text(hjust = 0.5),
+            plot.subtitle = element_text(hjust = 0.5,
+                                         size = 6),
+            legend.position = "none")
+  })
 r2 <- wrap_plots(r2, ncol = 6, nrow = 2)
 r2 <- r2 + plot_layout(guides = "collect")
 
 patch2 <- ((p2 | q2) / (r2)) 
+
+a <- (((wrap_elements(panel = textGrob("Section 1")) / wrap_elements(panel = (textGrob("Section 2")))) | ((r2.s1 / r2.s1) + plot_layout(guides = "collect"))) + plot_layout(guides = "collect", widths = c(1,10)))
+a
+patch2 <- (((p2 | q2) + plot_layout(guides = "collect")) / (a)) 
 patch2
 
-p2.dim <- get_dim(p2)
+ggsave(filename = "a.png",
+       plot = a,
+       path = paste0(out.dir,"/plots/spot_composition/"))
+r2.s1 <- SpatialFeaturePlot(non.pure.tumour, features = c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial"), images = "Section1",combine = F) 
+selected.non.pure <- c("Cancer Epithelial","CAFs", "Myeloid","B cells","T cells","Endothelial")
+r2.s1 <- lapply(X=seq_along(r2.s1), FUN = function(i){
+  r2.s1[[i]]  +
+    scale_fill_gradientn(limits = c(0.0,1), colours=SpatialColors(n=100)) +
+    ggtitle(label = toupper(selected.non.pure[i])) +
+    theme(legend.title = element_blank(),
+          legend.direction = "vertical",
+          plot.title = element_text(hjust = 0.5))
+})
+r2.s1 <- wrap_plots(r2.s1, ncol = 6) + plot_layout(guides = "collect")
+library(grid)
+(((wrap_elements(panel = textGrob("here\nhere")) | r2.s1) + plot_layout(widths = c(1,20))) & theme(plot.background = element_rect(fill = "blue"))) / ((wrap_elements(panel = textGrob("Section 2")) | r2.s1) + plot_layout(widths = c(1,20)))
 
+wrap_elements(panel = (textGrob("here") + r2.s1))
+
+((wrap_elements(panel = textGrob("Hello")) + plot_annotation(theme = theme(plot.margin = margin(.2,.2,.2,.2, "cm"))) & theme(plot.background = element_rect(fill = "yellow")) | wrap_elements(full = r2.s1) & theme(plot.background = element_rect(fill = "blue"))) + plot_layout(widths = c(1,10))) /
+  ((wrap_elements(panel = textGrob("Hello")) | wrap_elements(full = r2.s1) & theme(plot.background = element_rect(fill = "blue"))) + plot_layout(widths = c(1,10)))
+
+r2.s1 / r2.s1
+
+plot_grid(p2,q2,r2, ncol = 2)
+plot_grid(plot_grid(p2,q2),r2, ncol = 1, labels = "AUTO")
+library(cowplot)
+
+plots <- cowplot::align_plots(p2, r2, align = 'v', axis = 'l')
+up_row <- plot_grid(plots[[1]], q2, labels = c('B', 'C'), label_size = 12)
+
+plot_grid(up_row,plots[[2]], labels = c('A', ''), label_size = 12, ncol = 1)
+
+
+align <- cowplot::align_plots(p2,q2, align = "h", axis = "b")
+up_row <- plot_grid(p2,q2)
+
+dim <- get_dim(up_row)
+bottom_row <- plot_grid(r2)
+bottom_align <- set_dim(bottom_row, dim)
+
+fig <- plot_grid(up_row, bottom_align, ncol = 1)
+fig
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/spot_composition/"), recursive = TRUE)
 ggsave(filename = "patch_proportions_vs_celltype1.png",
