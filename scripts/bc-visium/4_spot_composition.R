@@ -298,6 +298,11 @@ metadata <- cell.type %>%
          prop_celltype_3,
          spot.composition.collapse)
 
+# Save selected data to add metadata as .tsv
+metada.to.tsv <- metadata %>%
+  rownames_to_column(var = "spot_id") %>%
+  write_tsv(., file = "./data/spot_composition.tsv", col_names = TRUE)
+
 # Add metadata to new seuratobject
 seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = metadata)
 head(seuratobj.spotcomp@meta.data)
@@ -410,7 +415,7 @@ non.pure.spatial.dimplot <- lapply(X = seq_along(non.pure.spatial.dimplot), FUN 
 })
 
 # SpatialFeature plot of cell type proportions
-## We excluce Normal, PVL and Plasmablasts for principal figure (Supplementary?)
+## We exclude Normal, PVL and Plasmablasts for principal figure (Supplementary?)
 
 features <- c("Cancer.Epithelial","CAFs", "Myeloid","B.cells","T.cells","Endothelial")
 
@@ -522,9 +527,13 @@ legend.categories <- get_legend(
 figure2 <- plot_grid(pure.patch, nonpure.patch, legend.categories, ncol = 1, labels = c("A","B",""), rel_heights = c(1,1,0.05), label_size = 18, hjust = -12, vjust = 1)
 figure2
 
-ggsave(filename = "Figure2.png",
+ggsave(filename = "Figure2.svg",
        plot = figure2,
        path = paste0(out.dir,"/plots/spot_composition/"))
+ggsave(filename = "Figure2.tiff",
+       plot = figure2,
+       path = paste0(out.dir,"/plots/spot_composition/"))
+save_plot(filename = paste0("./results/plots/spot_composition/Figure2.png"), plot = figure2, base_height = NULL, base_width = NULL, base_asp = c(1,1,0.05))
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/spot_composition/"), recursive = TRUE)
