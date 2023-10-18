@@ -70,8 +70,15 @@ seuratobj.clusters <- FindNeighbors(seuratobj.phase,
                                     reduction = "pca", 
                                     dims = 1:20, 
                                     k.param = 50)
+seuratobj.clusters.alt <- FindNeighbors(seuratobj.phase.alt, 
+                                        reduction = "pca", 
+                                        dims = 1:20, 
+                                        k.param = 50)
 res <- c(0.1,0.2,0.3,0.4,0.5)
 seuratobj.clusters <- FindClusters(seuratobj.clusters, 
+                                   resolution = res, 
+                                   verbose = FALSE)
+seuratobj.clusters.alt <- FindClusters(seuratobj.clusters.alt, 
                                    resolution = res, 
                                    verbose = FALSE)
 
@@ -80,8 +87,13 @@ seuratobj.clusters <- RunUMAP(seuratobj.clusters,
                               reduction = "pca", 
                               dims = 1:20, 
                               n.components = 2)
-  
+seuratobj.clusters.alt <- RunUMAP(seuratobj.clusters.alt, 
+                              reduction = "pca", 
+                              dims = 1:20, 
+                              n.components = 2)
+
 # Clustree plots
+## Phase
 clustree.plot <- clustree(seuratobj.clusters, 
                           prefix = "SCT_snn_res.",
                           node_colour = "sc3_stability") 
@@ -105,7 +117,12 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=SCT_snn_res., y=median.st
   labs(x = "Resolution",
        y = "Median of SC3 stability")
 
-clustree.analysis <- (clustree.plot | max.stability.plot)
+## Alternative phase
+clustree.plot.alt <- clustree(seuratobj.clusters.alt, 
+                          prefix = "SCT_snn_res.",
+                          node_colour = "sc3_stability") 
+
+clustree.analysis <- (clustree.plot | clustree.plot.alt)
 
 # Boxplot by cluster, celltypes proportion
 
@@ -131,9 +148,9 @@ boxplot.celltypes.clusters <- ggplot(df.celltypes.clusters.pivot, aes(x = cell.t
 spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
 dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
 
-spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
-dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
-(boxplot.celltypes.clusters | (spatial.clusters / dim.clusters))  + 
+#spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
+#dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.1")
+((spatial.clusters / dim.clusters) | boxplot.celltypes.clusters)  + 
   plot_annotation(tag_levels = 'A')
 
 breastcancermarkers.spatial <- SpatialFeaturePlot(seuratobj.clusters, features = c("ESR1", "PGR", "ERBB2"), ncol = 4)
@@ -171,7 +188,7 @@ save(all.plots, file = paste0("./results/ggplots/clustering.RData"))
 
 # Save data
 saveRDS(seuratobj.clusters, file = "./results/analysis/seuratobj.clusters.rds")
-
+saveRDS(seuratobj.clusters.alt, file = "./results/analysis/seuratobj.clusters.alt.rds")
 
 
 
