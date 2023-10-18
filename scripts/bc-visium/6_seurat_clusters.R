@@ -12,6 +12,7 @@ dir.create(path = out.dir, recursive = TRUE)
 # Load RDS
 
 seuratobj.phase <- readRDS(file = "./results/analysis/seuratobj.phase.rds")
+seuratobj.phase.alt <- readRDS(file = "./results/analysis/seuratobj.phase_alternative.rds")
 
 # RunPCA made in previous script
 # Elbow plot
