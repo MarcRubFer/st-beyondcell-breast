@@ -21,6 +21,7 @@ set.seed(1)
 
 # Read Seurat object 
 seuratobj.clusters <- readRDS(file = "./results/analysis/seuratobj.clusters.rds")
+seuratobj.clusters.alt <- readRDS(file = "./results/analysis/seuratobj.clusters.alt.rds")
 
 # Read and plot non-aligned coordinates
 ## Raw coords
@@ -209,6 +210,9 @@ map.corrected.coords <- ggplot(corrected.raw.coords, aes(x=corr_x, y=corr_y, col
 seuratobj.aligned <- AddMetaData(seuratobj.clusters, metadata = corrected.raw.coords)
 seuratobj.aligned@meta.data
 
+seuratobj.aligned.alt <- AddMetaData(seuratobj.clusters.alt, metadata = corrected.raw.coords)
+seuratobj.aligned.alt@meta.data
+
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/alignment/"), recursive = TRUE)
 ggsave(filename = "raw_coordinates.png",
@@ -237,3 +241,4 @@ save(all.plots, file = paste0("./results/ggplots/alignment.RData"))
 
 # Save object
 saveRDS(seuratobj.aligned, file = "./results/analysis/seuratobj.aligned.rds")
+saveRDS(seuratobj.aligned.alt, file = "./results/analysis/seuratobj.aligned.alternative.rds")
