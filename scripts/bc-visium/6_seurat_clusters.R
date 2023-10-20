@@ -5,6 +5,10 @@ library("tidyverse")
 library("patchwork")
 library("clustree")
 library("tidygraph")
+#install.packages("remotes")
+#library("remotes")
+#remotes::install_github("davidsjoberg/ggsankey")
+library("ggsankey")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -194,6 +198,61 @@ dim.clusters.alt <- DimPlot(seuratobj.clusters.alt, group.by = "SCT_snn_res.0.2"
 boxplot.celltypes.clusters | boxplot.celltypes.clusters.alt
 spatial.clusters / spatial.clusters.alt
 dim.clusters | dim.clusters.alt
+
+dim.plots.spot.comp <- (DimPlot(seuratobj.clusters, group.by = "spot.composition.collapse") | DimPlot(seuratobj.clusters.alt, group.by = "spot.composition.collapse")) + 
+  plot_layout(guides = "collect")
+dim.plots.phase <- (DimPlot(seuratobj.clusters, group.by = "Phase") | DimPlot(seuratobj.clusters.alt, group.by = "Phase")) + 
+  plot_layout(guides = "collect")
+
+(dim.clusters | dim.plots.spot.comp[[1]] | dim.plots.phase[[1]]) & theme(legend.position = "bottom")
+(dim.clusters.alt | dim.plots.spot.comp[[2]] | dim.plots.phase[[2]]) & theme(legend.position = "bottom", legend.text = element_text(size = 7))
+
+# SanKey diagrams
+
+df <- seuratobj.clusters@meta.data %>%
+  select(spot.composition.collapse, SCT_snn_res.0.2)
+
+head(df)
+
+df <- df %>%
+  make_long(spot.composition.collapse, SCT_snn_res.0.2)
+
+pl <- ggplot(df, aes(x = x
+                     , next_x = next_x
+                     , node = node
+                     , next_node = next_node
+                     , fill = factor(node)
+                     , label = node)
+)
+pl <- pl +geom_sankey(flow.alpha = 0.5
+                      , node.color = "black"
+                      ,show.legend = T)
+pl <- pl +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
+pl
+
+df.alt <- seuratobj.clusters.alt@meta.data %>%
+  select(spot.composition.collapse, SCT_snn_res.0.2)
+
+head(df)
+
+df.alt <- df.alt %>%
+  make_long(spot.composition.collapse, SCT_snn_res.0.2)
+
+pl.alt <- ggplot(df.alt, aes(x = x
+                             , next_x = next_x
+                             , node = node
+                             , next_node = next_node
+                             , fill = factor(node)
+                             , label = node)
+)
+pl.alt <- pl.alt +geom_sankey(flow.alpha = 0.5
+                              , node.color = "black"
+                              ,show.legend = T)
+pl.alt <- pl.alt +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
+pl.alt
+
+(pl | pl.alt) & theme_void() + theme(legend.position = "none") 
+
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/clustering/"), recursive = TRUE)

@@ -49,7 +49,7 @@ pl.alt <- pl.alt +geom_sankey(flow.alpha = 0.5
 pl.alt <- pl.alt +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
 pl.alt
 
-(pl | pl.alt) & theme(legend.position = "none")
+(pl | pl.alt) & theme_void() + theme(legend.position = "none") 
 
 ggplot(df, aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = factor(node), label = node)) +
   geom_alluvial(flow.alpha = .6) +
