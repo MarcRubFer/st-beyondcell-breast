@@ -18,7 +18,7 @@ Breast cancer datasets were obtained from 10X genomics examples website (registr
 
 It is recommended to use conda enviroments located in envs directory
 
-- R: version 4.2.3
+- R: version 4.3.1
 - RStudio: version 2022.07.1 Build 554
 - Seurat: version 4.3.0
 - spacexr: version 2.2.1
