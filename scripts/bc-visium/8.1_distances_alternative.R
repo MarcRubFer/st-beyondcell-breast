@@ -348,3 +348,4 @@ plot.list[[6]] +
 
 # Save data
 saveRDS(seuratobj.distances, file = "./results/analysis/seuratobj.distances.rds")
+saveRDS(seuratobj.distances.alt, file = "./results/analysis/seuratobj.distances.alt.rds")
