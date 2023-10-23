@@ -75,9 +75,11 @@ set.seed(1)
 # Load seuratobject
 seuratobj.aligned <- readRDS(file = "./results/analysis/seuratobj.aligned.rds")
 head(seuratobj.aligned@meta.data)
-
+seuratobj.aligned.alt <- readRDS(file = "./results/analysis/seuratobj.aligned.alternative.rds")
+head(seuratobj.aligned.alt@meta.data)
 # Number of slides
 nslides <- length(seuratobj.aligned@images)
+nslides.alt <- length(seuratobj.aligned.alt@images)
 
 # Number of rows to split the SpatialDimPlots into and height of the final plot
 nrows <- nslides/3
@@ -86,9 +88,12 @@ h <- 7*nrows
 # Get coordinates
 coordinates <- seuratobj.aligned@meta.data %>%
   select(corr_x, corr_y, corr_z)
+coordinates.alt <- seuratobj.aligned.alt@meta.data %>%
+  select(corr_x, corr_y, corr_z)
 
 # Euclidean distances
 distances <- as.matrix(dist(coordinates, method = "euclidean"))
+distances.alt <- as.matrix(dist(coordinates.alt, method = "euclidean"))
 
 # Scale distances
 distances.scaled <- distances/min(distances[distances > 0], na.rm = TRUE)
@@ -97,11 +102,11 @@ distances.scaled <- distances/min(distances[distances > 0], na.rm = TRUE)
 head(seuratobj.aligned@meta.data)
 # Split multiple spots in each cell type
 spot.comp.df <- seuratobj.aligned@meta.data %>%
-  select(spot.composition.filter) %>%
+  select(spot.composition.collapse) %>%
   rownames_to_column("spot")
 spot.comp.splited <- data.frame()
 for (i in 1:nrow(spot.comp.df)) {
-  spot.composition <- spot.comp.df$spot.composition.filter[i]
+  spot.composition <- spot.comp.df$spot.composition.collapse[i]
   
   if (grepl(pattern = "\\+", spot.composition)) {
     terms <- strsplit(spot.composition, "\\+")[[1]]
@@ -116,9 +121,36 @@ for (i in 1:nrow(spot.comp.df)) {
     spot.comp.splited <- rbind(spot.comp.splited, spot.comp.df[i, ])
   }
 }
-spot.comp.splited
+spot.comp.splited <- spot.comp.splited %>%
+  mutate(cell.composition = str_squish(cell.composition))
 rownames(spot.comp.splited) <- NULL
 head(spot.comp.splited)
+
+spot.comp.df.alt <- seuratobj.aligned.alt@meta.data %>%
+  select(spot.composition.collapse) %>%
+  rownames_to_column("spot")
+spot.comp.splited.alt <- data.frame()
+for (i in 1:nrow(spot.comp.df.alt)) {
+  spot.composition <- spot.comp.df.alt$spot.composition.collapse[i]
+  
+  if (grepl(pattern = "\\+", spot.composition)) {
+    terms <- strsplit(spot.composition, "\\+")[[1]]
+    
+    for (term in terms) {
+      new_row <- spot.comp.df.alt[i, ]
+      new_row$cell.composition <- term
+      spot.comp.splited.alt <- rbind(spot.comp.splited.alt, new_row)
+    }
+  } else {
+    spot.comp.df.alt[i, "cell.composition"] <- spot.composition
+    spot.comp.splited.alt <- rbind(spot.comp.splited.alt, spot.comp.df.alt[i, ])
+  }
+}
+spot.comp.splited.alt <- spot.comp.splited.alt %>%
+  mutate(cell.composition = str_squish(cell.composition))
+rownames(spot.comp.splited.alt) <- NULL
+head(spot.comp.splited.alt)
+
 
 # Spot vectors for each cell type
 ## Function for get it
@@ -129,15 +161,25 @@ spot.vector <- function(dataframe, cell.type){
   return(vector)
 }
 
-levels(factor(spot.comp.splited$cell.composition))
+cell.types <- levels(factor(spot.comp.splited$cell.composition))
+cell.types.alt <- levels(factor(spot.comp.splited.alt$cell.composition))
+#puretumour.spots <- spot.vector(spot.comp.splited, "PURE TUMOUR")
+#cancerepith.spots <- spot.vector(spot.comp.splited, "CANCER EPITHELIAL")
+#endothelial.spots <- spot.vector(spot.comp.splited, "ENDOTHELIAL")
+#lymphoid.spots <- spot.vector(spot.comp.splited, "LYMPHOID")
+#mixed.spots <- spot.vector(spot.comp.splited, "OTHERS")
+#myeloid.spots <- spot.vector(spot.comp.splited, "MYELOID")
+#cafs.spots <- spot.vector(spot.comp.splited, "CAFS")
 
-puretumour.spots <- spot.vector(spot.comp.splited, "Pure_Tumour")
-cancerepith.spots <- spot.vector(spot.comp.splited, "Cancer.Epithelial")
-endothelial.spots <- spot.vector(spot.comp.splited, "Endothelial")
-lymphoid.spots <- spot.vector(spot.comp.splited, "Lymphoid")
-mixed.spots <- spot.vector(spot.comp.splited, "Mixed")
-myeloid.spots <- spot.vector(spot.comp.splited, "Myeloid")
-cafs.spots <- spot.vector(spot.comp.splited, "CAFs")
+list.spots <- lapply(X = cell.types, FUN = function(type){
+  cell.types.spot <- spot.vector(spot.comp.splited, type)
+  return(cell.types.spot)
+})
+
+list.spots.alt <- lapply(X = cell.types.alt, FUN = function(type){
+  cell.types.spot <- spot.vector(spot.comp.splited.alt, type)
+  return(cell.types.spot)
+})
 
 # Get the min distance of each spot to the closer Tumour spot
 ## Function for get it
@@ -149,64 +191,118 @@ celltype.distance <- function(dataframe, celltype.spots){
   return(cell.dist)
 }
 
-tumour.distance <- celltype.distance(spot.comp.splited, puretumour.spots)
-cancerepith.distance <- celltype.distance(spot.comp.splited, cancerepith.spots)
-endothelial.distance <- celltype.distance(spot.comp.splited, endothelial.spots)
-lymphoid.distance <- celltype.distance(spot.comp.splited, lymphoid.spots)
-mixed.distance <- celltype.distance(spot.comp.splited, mixed.spots)
-myeloid.distance <- celltype.distance(spot.comp.splited, myeloid.spots)
-cafs.distance <- celltype.distance(spot.comp.splited, cafs.spots)
+#tumour.distance <- celltype.distance(spot.comp.splited, puretumour.spots)
+#cancerepith.distance <- celltype.distance(spot.comp.splited, cancerepith.spots)
+#endothelial.distance <- celltype.distance(spot.comp.splited, endothelial.spots)
+#lymphoid.distance <- celltype.distance(spot.comp.splited, lymphoid.spots)
+#mixed.distance <- celltype.distance(spot.comp.splited, mixed.spots)
+#myeloid.distance <- celltype.distance(spot.comp.splited, myeloid.spots)
+#cafs.distance <- celltype.distance(spot.comp.splited, cafs.spots)
 
-spot.comp.dist <- spot.comp.splited %>%
-  cbind(data.frame(mindist.puretumour = tumour.distance),
-        data.frame(mindist.cancerepith = cancerepith.distance),
-        data.frame(mindist.endothelial = endothelial.distance),
-        data.frame(mindist.lymphoid = lymphoid.distance),
-        data.frame(mindist.mixed = mixed.distance),
-        data.frame(mindist.myeloid = myeloid.distance),
-        data.frame(mindist.cafs = cafs.distance)) 
+list.distances <- lapply(X = list.spots, FUN = function(spots){
+  distances <- celltype.distance(spot.comp.splited, spots)
+  return(distances)
+})
+list.distances.alt <- lapply(X = list.spots.alt, FUN = function(spots){
+  distances <- celltype.distance(spot.comp.splited.alt, spots)
+  return(distances)
+})
+#spot.comp.dist <- spot.comp.splited %>%
+#  cbind(data.frame(mindist.puretumour = tumour.distance),
+#        data.frame(mindist.cancerepith = cancerepith.distance),
+#        data.frame(mindist.endothelial = endothelial.distance),
+#        data.frame(mindist.lymphoid = lymphoid.distance),
+#        data.frame(mindist.mixed = mixed.distance),
+#        data.frame(mindist.myeloid = myeloid.distance),
+#        data.frame(mindist.cafs = cafs.distance)) 
+#head(spot.comp.dist)
+
+distances.df <-  as.data.frame(do.call(cbind, list.distances))
+names(distances.df) <- paste0("mindist.",cell.types)
+spot.comp.dist <- cbind(spot.comp.splited,distances.df)
+rownames(spot.comp.dist) <- NULL
 head(spot.comp.dist)
+
+distances.df.alt <-  as.data.frame(do.call(cbind, list.distances.alt))
+names(distances.df.alt) <- paste0("mindist.",cell.types.alt)
+spot.comp.dist.alt <- cbind(spot.comp.splited.alt,distances.df.alt)
+rownames(spot.comp.dist.alt) <- NULL
+head(spot.comp.dist.alt)
 
 # Plot density distances
 mindist.types <- names(spot.comp.dist)[which(startsWith(names(spot.comp.dist), "mindist"))]
+mindist.types.alt <- names(spot.comp.dist.alt)[which(startsWith(names(spot.comp.dist.alt), "mindist"))]
 
 plot.list <- lapply(mindist.types, function(dist) {
+  type <- gsub(pattern = "mindist.", replacement = "",dist)
   plot <- spot.comp.dist %>%
-    ggplot(mapping = aes(x = !!sym(dist))) +
+    ggplot(mapping = aes(x = !!sym(dist))) +        #Option !!sym() let to pass arguments of a function
     geom_density(aes(fill = cell.composition)) +
+    #xlim(0,12000) +
     facet_grid(rows = vars(cell.composition),
                scales = "free_y") +
-    ggtitle(paste(dist,"by cell type"))
+    ggtitle(paste("Distance to",type,"by cell type")) +
+    theme(axis.title.x = element_blank())
 })
-plot.list[[1]] +
-  xlim(c(mean(400), 1000))
+wrap_plots(plot.list, ncol = 4) + plot_layout(guides = "collect")
 
-combined_plot <- plot.list[[1]]
-for (i in 2:length(plot.list)) {
-  combined_plot <- combined_plot + plot.list[[i]]
-}
+plot.list.alt <- lapply(mindist.types.alt, function(dist) {
+  type <- gsub(pattern = "mindist.", replacement = "",dist)
+  plot <- spot.comp.dist.alt %>%
+    ggplot(mapping = aes(x = !!sym(dist))) +        #Option !!sym() let to pass arguments of a function
+    geom_density(aes(fill = cell.composition)) +
+    #xlim(0,12000) +
+    facet_grid(rows = vars(cell.composition),
+               scales = "free_y") +
+    ggtitle(paste("Distance to",type,"by cell type")) +
+    theme(axis.title.x = element_blank())
+})
+wrap_plots(plot.list.alt, ncol = 4) + plot_layout(guides = "collect")
 
-combined_plot <- combined_plot + plot_layout(ncol = 2)  
-combined_plot
 
 # Add distance data to metadata
 head(spot.comp.dist)
-rwn <- spot.comp.dist %>%
-  distinct(spot, .keep_all = TRUE) %>%
-  pull(spot)
-metadata <- spot.comp.dist %>%
-  distinct(spot, .keep_all = TRUE) %>%
-  mutate(spot = NULL,
-         spot.composition.filter = NULL,
-         cell.composition = NULL)
-rownames(metadata) <- rwn
+meta.distances <- function(data.frame){
+  rwn <- spot.comp.dist %>%
+    distinct(spot, .keep_all = TRUE) %>%
+    pull(spot)
+  metadata <- spot.comp.dist %>%
+    distinct(spot, .keep_all = TRUE) %>%
+    mutate(spot = NULL,
+           spot.composition.collapse = NULL,
+           cell.composition = NULL)
+  rownames(metadata) <- rwn
+  return(metadata)
+}
+metadata <- meta.distances(spot.comp.dist)
 head(metadata)
+metadata.alt <- meta.distances(spot.comp.dist.alt)
+head(metadata.alt)
 
 seuratobj.distances <- AddMetaData(seuratobj.aligned, metadata = metadata)
 head(seuratobj.distances@meta.data)
-
+seuratobj.distances.alt <- AddMetaData(seuratobj.aligned.alt, metadata = metadata.alt)
+head(seuratobj.distances.alt)
 
 # Spatial features plots
+features <- names(seuratobj.distances@meta.data[grep("mindist.", x= names(seuratobj.distances@meta.data))])
+SpatialFeaturePlot(seuratobj.distances, features = features, ncol = 8)
+
+spatial.distances.plots <- lapply(X = features, FUN = function(feature){
+  customSpatialFeaturePlot(seuratobj.distances, features = feature, return.list = T)
+})
+spatial.distances.plots <- lapply(spatial.distances.plots, function(x){
+  x + scale_fill_gradientn(colours = colorscale(n = 100, rev = T)) 
+})
+spatial.distances.plots[[1]]
+wrap_plots(spatial.distances.plots)
+spatial.distances.plots <- lapply(
+  customSpatialFeaturePlot(seuratobj.distances, features = "mindist.ENDOTHELIAL", return.list = TRUE),
+  FUN = function(x) {
+    x + scale_fill_gradientn(colours = colorscale(n = 100, rev = T)) 
+  }) |>
+  wrap_plots(nrow = 1, guides = "collect")
+
 spatial.puretumour.distance <- lapply(
   customSpatialFeaturePlot(seuratobj.distances, features = "mindist.puretumour", return.list = TRUE),
   FUN = function(x) {
