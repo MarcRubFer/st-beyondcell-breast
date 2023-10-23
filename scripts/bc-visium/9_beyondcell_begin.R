@@ -13,60 +13,109 @@ dir.create(path = out.dir, recursive = TRUE)
 set.seed(1)
 # Read single-cell experiment.
 seuratobj.distances <- readRDS("./results/analysis/seuratobj.distances.rds")
+seuratobj.distances.alt <- readRDS("./results/analysis/seuratobj.distances.alt.rds")
 
 # Set Assay.
 DefaultAssay(seuratobj.distances) <- "SCT"
-
+DefaultAssay(seuratobj.distances.alt) <- "SCT"
 # Generate geneset object with one of the ready to use signature collections.
 gs.ssc <- GetCollection(SSc)
 
 # Compute score for the SSc. This might take a few minutes depending on the size of your dataset.
 bc <- bcScore(seuratobj.distances, gs.ssc, expr.thres = 0.1) 
-
+bc.alt <- bcScore(seuratobj.distances.alt, gs.ssc, expr.thres = 0.1) 
 # Number of NAs
 n.NA <- data.frame(nNAs = colSums(is.na(bc@normalized)),
                    row.names = colnames(bc@normalized))
 bc <- bcAddMetadata(bc, n.NA)
 bc@meta.data
+n.NA.alt <- data.frame(nNAs = colSums(is.na(bc.alt@normalized)),
+                       row.names = colnames(bc.alt@normalized))
+bc.alt <- bcAddMetadata(bc.alt, n.NA.alt)
 # Filter out spots with a high percentage of NAs
 bc.filtered <- bcSubset(bc, nan.cells = 0.95)
+bc.filtered.alt <- bcSubset(bc.alt, nan.cells = 0.95)
 
 # Replace NAs by 0s
 bc.filtered@normalized[is.na(bc.filtered@normalized)] <- 0
 bc.recomputed <- bcRecompute(bc.filtered, slot = "normalized")
 
+bc.filtered.alt@normalized[is.na(bc.filtered.alt@normalized)] <- 0
+bc.recomputed.alt <- bcRecompute(bc.filtered.alt, slot = "normalized")
+
 #Selection of k parameters
 k.param <- c(10, 20, 30, 40, 50)
-l <- lapply(X = k.param, FUN = function(x){
-  res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
-  a <- bcUMAP(bc.recomputed, pc =20, k.neighbors = x, res = res)
-  clustree.graph <- clustree(a@meta.data, 
-                             prefix = "bc_clusters_res.",
-                             prop_filter = 0.1, 
-                             node_colour = "sc3_stability",
-                             return = "graph")
+res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
+bcKparRes <- function(bc.object, k.param, res){
+  list.data <- lapply(X = k.param, FUN = function(x){
+    umap <- bcUMAP(bc.object, pc =20, k.neighbors = x, res = res)
+    clustree.graph <- clustree(umap@meta.data, 
+                               prefix = "bc_clusters_res.",
+                               prop_filter = 0.1, 
+                               node_colour = "sc3_stability",
+                               return = "graph")
+    
+    max.stability <- clustree.graph %>%
+      activate(nodes) %>%
+      as.data.frame() %>%
+      group_by(bc_clusters_res.) %>%
+      summarise(median.stability = median(sc3_stability),
+                n.clusters = length(unique(cluster))) %>%
+      mutate(k.param = x)
+    return(max.stability)
+  })
   
-  max.stability <- clustree.graph %>%
-    activate(nodes) %>%
-    as.data.frame() %>%
-    group_by(bc_clusters_res.) %>%
-    summarise(median.stability = median(sc3_stability),
-              n.clusters = length(unique(cluster))) %>%
-    mutate(k.param = x)
-  return(max.stability)
-})
+  list.data <- list.data %>%
+    bind_rows() %>%
+    mutate(k.param = as.factor(k.param))
+  return(list.data)
+  
+}
+#l <- lapply(X = k.param, FUN = function(x){
+#  res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
+#  a <- bcUMAP(bc.recomputed, pc =20, k.neighbors = x, res = res)
+#  clustree.graph <- clustree(a@meta.data, 
+#                             prefix = "bc_clusters_res.",
+#                             prop_filter = 0.1, 
+#                             node_colour = "sc3_stability",
+#                             return = "graph")
+#  
+#  max.stability <- clustree.graph %>%
+#    activate(nodes) %>%
+#    as.data.frame() %>%
+#    group_by(bc_clusters_res.) %>%
+#    summarise(median.stability = median(sc3_stability),
+#              n.clusters = length(unique(cluster))) %>%
+#    mutate(k.param = x)
+#  return(max.stability)
+#})
+#
+#l <- l %>%
+#  bind_rows() %>%
+#  mutate(k.param = as.factor(k.param))
 
-l <- l %>%
-  bind_rows() %>%
-  mutate(k.param = as.factor(k.param))
-
-clustersc3.kparam <- ggplot(data=l, aes(x=bc_clusters_res., y=median.stability, group = k.param, color = k.param)) + 
+sc3.kparam <- bcKparRes(bc.object = bc.recomputed, k.param = k.param, res = res)
+sc3.kparam.plot <- ggplot(data=sc3.kparam, aes(x=bc_clusters_res., y=median.stability, group = k.param, color = k.param)) + 
   geom_line()+
   geom_point() +
   labs(x = "Resolution",
        y = "Median of SC3 stability") +
-  ggtitle(label = "SC3 stability at different kparam and resolutions")
+  ggtitle(label = "SC3 stability at different kparam and resolutions",
+          subtitle = "Cell cycle regression: standard") +
+  theme_light()
 
+sc3.kparam.alt <- bcKparRes(bc.object = bc.recomputed.alt, k.param = k.param, res = res)
+sc3.kparam.alt.plot <- ggplot(data=sc3.kparam.alt, aes(x=bc_clusters_res., y=median.stability, group = k.param, color = k.param)) + 
+  geom_line()+
+  geom_point() +
+  labs(x = "Resolution",
+       y = "Median of SC3 stability") +
+  ggtitle(label = "SC3 stability at different kparam and resolutions",
+          subtitle = "Cell cycle regression: alternative") +
+  theme_light() +
+  theme(plot.subtitle = element_text(colour = "red"))
+
+sc3.kparam.plot | sc3.kparam.alt.plot
 
 # Run the bcUMAP function again, specifying the k.params
 res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
@@ -115,8 +164,8 @@ bc.nCountRNA <- bcClusters(bc.recomputed,
   ggtitle("nCountsRNA")
 bc.phases <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "Phase", pt.size = 1.5)
 
-bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1) +
-  ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.3)")
+bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.1)")
 bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "bc_clusters_res.0.3", pt.size = 1) +
   ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.3)")
 
