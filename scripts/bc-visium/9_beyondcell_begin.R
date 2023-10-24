@@ -121,10 +121,17 @@ sc3.kparam.plot | sc3.kparam.alt.plot
 res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
 bc.recomputed <- bcUMAP(bc.recomputed, pc = 20, k.neighbors = 40, res = res)
 head(bc.recomputed@meta.data)
+bc.recomputed.alt <- bcUMAP(bc.recomputed.alt, pc = 20, k.neighbors = 40, res = res)
+head(bc.recomputed.alt@meta.data)
 # Reanalysis of sc3stability for plotting
 clustree.plot <- clustree(bc.recomputed@meta.data, 
                           prefix = "bc_clusters_res.",
                           node_colour = "sc3_stability") 
+
+clustree.plot.alt <- clustree(bc.recomputed.alt@meta.data, 
+                          prefix = "bc_clusters_res.",
+                          node_colour = "sc3_stability") 
+
 
 clustree.graph <- clustree(bc.recomputed@meta.data, 
                            prefix = "bc_clusters_res.",
@@ -147,7 +154,7 @@ max.stability.plot <- ggplot(data=max.stability, aes(x=bc_clusters_res., y=media
 
 clustree.plot <- clustree.plot + ggtitle(label = "Clustree with 40 k.param")
 
-patch.clustree <- clustersc3.kparam | clustree.plot
+patch.clustree <- sc3.kparam.plot | clustree.plot
 
 # Visualize whether the cells are clustered based on the number of genes detected per each cell.
 bc.nFeatureRNA <- bcClusters(bc.recomputed, 
@@ -173,9 +180,45 @@ bc.nFeatureRNA | bc.nCountRNA
 
 patch.bc.clusters <- bc.clusters | bc.clusters.seurat
 
-spatial.bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.01 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.02 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.03 <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+
+clustree.plot | (spatial.bc.clusters.01 / spatial.bc.clusters.02 / spatial.bc.clusters.03)
+
+spatial.bc.clusters.01.alt <- bcClusters(bc.recomputed.alt, UMAP = "beyondcell", idents = "bc_clusters_res.0.1", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.02.alt <- bcClusters(bc.recomputed.alt, UMAP = "beyondcell", idents = "bc_clusters_res.0.2", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+spatial.bc.clusters.03.alt <- bcClusters(bc.recomputed.alt, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1.5, spatial = TRUE, mfrow = c(1,2))
+
+clustree.plot.alt | (spatial.bc.clusters.01.alt / spatial.bc.clusters.02.alt / spatial.bc.clusters.03.alt)
+
+spatial.bc.clusters.03 / spatial.bc.clusters.03.alt
+
+
 spatial.bc.clusters <- spatial.bc.clusters +
   plot_annotation(title = "Spatial Distribution of Beyondcell clusters")
+
+# Sankey diagrams?
+library(ggsankey)
+head(bc.recomputed@meta.data)
+df <- bc.recomputed@meta.data %>%
+  select(spot.composition.collapse, bc_clusters_res.0.3) %>%
+  make_long(spot.composition.collapse,bc_clusters_res.0.3)
+pl <- ggplot(df, aes(x = x
+                     , next_x = next_x
+                     , node = node
+                     , next_node = next_node
+                     , fill = factor(node)
+                     , label = node)
+)
+pl <- pl +geom_sankey(flow.alpha = 0.5
+                      , node.color = "black"
+                      ,show.legend = T)
+pl <- pl +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
+pl + ggtitle("Cell cycle standard")+
+  theme_void() + 
+  theme(legend.position = "none")
+
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/beyondcell_create"), recursive = TRUE)
@@ -217,3 +260,4 @@ save(all.plots, file = paste0("./results/ggplots/beyondcell_create.RData"))
 
 # Save Data
 saveRDS(bc.recomputed, file = "./results/analysis/beyondcellobject.rds")
+saveRDS(bc.recomputed.alt, file = "./results/analysis/beyondcellobject.alt.rds")
