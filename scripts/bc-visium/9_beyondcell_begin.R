@@ -202,8 +202,8 @@ spatial.bc.clusters <- spatial.bc.clusters +
 library(ggsankey)
 head(bc.recomputed@meta.data)
 df <- bc.recomputed@meta.data %>%
-  select(spot.composition.collapse, bc_clusters_res.0.3) %>%
-  make_long(spot.composition.collapse,bc_clusters_res.0.3)
+  select(SCT_snn_res.0.2, spot.composition.collapse, bc_clusters_res.0.1) %>%
+  make_long(SCT_snn_res.0.2,spot.composition.collapse,bc_clusters_res.0.1)
 pl <- ggplot(df, aes(x = x
                      , next_x = next_x
                      , node = node
