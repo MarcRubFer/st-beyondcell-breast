@@ -157,8 +157,8 @@ clustree.analysis <- (clustree.plot | clustree.plot.alt)
 
 # Boxplot by cluster, celltypes proportion
 df.celltypes.clusters <- seuratobj.clusters@meta.data %>%
-  select(B.cells:T.cells,SCT_snn_res.0.2) %>%
-  rename(clusters = SCT_snn_res.0.2) %>%
+  select(B.cells:T.cells,SCT_snn_res.0.3) %>%
+  rename(clusters = SCT_snn_res.0.3) %>%
   mutate(clusters = as.factor(clusters)) %>%
   pivot_longer(cols = -clusters,
                names_to = "cell.type",
@@ -167,92 +167,90 @@ df.celltypes.clusters <- seuratobj.clusters@meta.data %>%
 boxplot.celltypes.clusters <- ggplot(df.celltypes.clusters, aes(x = cell.type, y = cell.prop)) +
   geom_boxplot(aes(fill = cell.type)) + 
   facet_wrap(~clusters) +
-  ggtitle(label = "Cell types proportions within each cluster", subtitle = "Cell cycle regression: standard") +
+  #ggtitle(label = "Cell types proportions within each cluster", subtitle = "Cell cycle regression: standard") +
   theme(axis.text.x = element_blank(),
         axis.ticks = element_blank()) 
-
-spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
-dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.2")
-
-df.celltypes.clusters.alt <- seuratobj.clusters.alt@meta.data %>%
-  select(B.cells:T.cells,SCT_snn_res.0.2) %>%
-  rename(clusters = SCT_snn_res.0.2) %>%
-  mutate(clusters = as.factor(clusters)) %>%
-  pivot_longer(cols = -clusters,
-               names_to = "cell.type",
-               values_to = "cell.prop")
-
-boxplot.celltypes.clusters.alt <- ggplot(df.celltypes.clusters.alt, aes(x = cell.type, y = cell.prop)) +
-  geom_boxplot(aes(fill = cell.type)) + 
-  facet_wrap(~clusters) +
-  ggtitle(label = "Cell types proportions within each cluster", subtitle = "Cell cycle regression: alternative") +
-  theme(axis.text.x = element_blank(),
-        axis.ticks = element_blank(), 
-        plot.subtitle = element_text(colour = "red")) 
-
-spatial.clusters.alt <- SpatialDimPlot(seuratobj.clusters.alt, group.by = "SCT_snn_res.0.2")
-dim.clusters.alt <- DimPlot(seuratobj.clusters.alt, group.by = "SCT_snn_res.0.2")
-
-
-
-boxplot.celltypes.clusters | boxplot.celltypes.clusters.alt
-spatial.clusters / spatial.clusters.alt
-dim.clusters | dim.clusters.alt
-
-dim.plots.spot.comp <- (DimPlot(seuratobj.clusters, group.by = "spot.composition.collapse") | DimPlot(seuratobj.clusters.alt, group.by = "spot.composition.collapse")) + 
-  plot_layout(guides = "collect")
-dim.plots.phase <- (DimPlot(seuratobj.clusters, group.by = "Phase") | DimPlot(seuratobj.clusters.alt, group.by = "Phase")) + 
-  plot_layout(guides = "collect")
-
-(dim.clusters | dim.plots.spot.comp[[1]] | dim.plots.phase[[1]]) & theme(legend.position = "bottom")
-(dim.clusters.alt | dim.plots.spot.comp[[2]] | dim.plots.phase[[2]]) & theme(legend.position = "bottom", legend.text = element_text(size = 7))
-
-# SanKey diagrams
-
 df <- seuratobj.clusters@meta.data %>%
-  select(spot.composition.collapse, SCT_snn_res.0.2)
+  select(spot.collapse,SCT_snn_res.0.3) %>%
+  group_by(SCT_snn_res.0.3, spot.collapse) %>%
+  summarise(n = n(),
+            )
 
-head(df)
+total_counts <- df %>%
+  group_by(SCT_snn_res.0.3) %>%
+  summarise(total = sum(n))
 
 df <- df %>%
-  make_long(spot.composition.collapse, SCT_snn_res.0.2)
+  left_join(total_counts, by = "SCT_snn_res.0.3")
 
-pl <- ggplot(df, aes(x = x
-                     , next_x = next_x
-                     , node = node
-                     , next_node = next_node
-                     , fill = factor(node)
-                     , label = node)
-)
-pl <- pl +geom_sankey(flow.alpha = 0.5
-                      , node.color = "black"
-                      ,show.legend = T)
-pl <- pl +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
-pl
+df <- df %>%
+  mutate(relat.prop = n / total)
 
-df.alt <- seuratobj.clusters.alt@meta.data %>%
-  select(spot.composition.collapse, SCT_snn_res.0.2)
 
 head(df)
+df
+colors.categories <- toupper(c(#"#4fafe3",
+  "MYELOID" ="#be7adc", #violet
+  "CAFS" = "#dec36f", #ocre
+  "ENDOTHELIAL" = "#549f42", #green
+  "LYMPHOID" = "#f1703a", #orange
+  "OTHERS" ="#79696B", #grey
+  "TUMOUR" = "#c4534e")) #dark.red
+#"PURE TUMOUR" = "#eb1d34")) # light.red
+names(colors.categories)
+colors.categories <- colors[order(names(colors.categories))]
+colors.categories
+barplot.celltypes.clusters <- ggplot(df, aes(x=SCT_snn_res.0.3, y=relat.prop, fill = spot.collapse)) +
+  geom_bar(stat = "identity") + 
+  scale_fill_manual(values = colors.categories)
 
-df.alt <- df.alt %>%
-  make_long(spot.composition.collapse, SCT_snn_res.0.2)
+barplot.celltypes.clusters
+spatial.clusters <- SpatialDimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.3")
+dim.clusters <- DimPlot(seuratobj.clusters, group.by = "SCT_snn_res.0.3")
 
-pl.alt <- ggplot(df.alt, aes(x = x
-                             , next_x = next_x
-                             , node = node
-                             , next_node = next_node
-                             , fill = factor(node)
-                             , label = node)
-)
-pl.alt <- pl.alt +geom_sankey(flow.alpha = 0.5
-                              , node.color = "black"
-                              ,show.legend = T)
-pl.alt <- pl.alt +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 1)
-pl.alt
+#df.celltypes.clusters.alt <- seuratobj.clusters.alt@meta.data %>%
+#  select(B.cells:T.cells,SCT_snn_res.0.2) %>%
+#  rename(clusters = SCT_snn_res.0.2) %>%
+#  mutate(clusters = as.factor(clusters)) %>%
+#  pivot_longer(cols = -clusters,
+#               names_to = "cell.type",
+#               values_to = "cell.prop")
+#
+#boxplot.celltypes.clusters.alt <- ggplot(df.celltypes.clusters.alt, aes(x = cell.type, y = cell.prop)) +
+#  geom_boxplot(aes(fill = cell.type)) + 
+#  facet_wrap(~clusters) +
+#  ggtitle(label = "Cell types proportions within each cluster", subtitle = "Cell cycle regression: alternative") +
+#  theme(axis.text.x = element_blank(),
+#        axis.ticks = element_blank(), 
+#        plot.subtitle = element_text(colour = "red")) 
+#
+#spatial.clusters.alt <- SpatialDimPlot(seuratobj.clusters.alt, group.by = "SCT_snn_res.0.3")
+#dim.clusters.alt <- DimPlot(seuratobj.clusters.alt, group.by = "SCT_snn_res.0.2")
 
-(pl | pl.alt) & theme_void() + theme(legend.position = "none") 
 
+dim.clusters | (boxplot.celltypes.clusters / spatial.clusters)
+DimPlot(seuratobj.clusters, group.by = "spot.collapse")
+
+# Collapse all non-tumour cell types in TME category. Add metadata
+dual.spot <- seuratobj.clusters@meta.data %>%
+  select(spot.collapse) %>%
+  mutate(spot.dual = case_when(spot.collapse == "TUMOUR" ~ spot.collapse,
+                               TRUE ~ "TME"))
+head(dual.spot)
+seuratobj.clusters <- AddMetaData(seuratobj.clusters, metadata = dual.spot)
+
+#DimPlot TME-Tumour
+dual.colors <- c(
+"TUMOUR" = "#c4534e",
+"TME" = "#098cf0")
+dim.dual <- DimPlot(seuratobj.clusters, group.by = "spot.dual", cols = dual.colors)
+spatial.dual <- SpatialDimPlot(seuratobj.clusters, group.by = "spot.dual", cols = dual.colors)
+
+
+panel.dimplots <- (dim.clusters | dim.dual) & ggtitle(label = NULL)
+left.panels <- ((panel.dimplots / plot_spacer() / barplot.celltypes.clusters) + plot_layout(heights = c(1,0.1,1.5)))
+right.panels <- ((spatial.dual[[1]] / spatial.dual[[2]]) |(spatial.clusters[[1]] / spatial.clusters[[2]])) 
+(left.panels | right.panels) + plot_annotation(tag_levels = "A")
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/clustering/"), recursive = TRUE)
