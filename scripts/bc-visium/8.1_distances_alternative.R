@@ -102,11 +102,11 @@ distances.scaled <- distances/min(distances[distances > 0], na.rm = TRUE)
 head(seuratobj.aligned@meta.data)
 # Split multiple spots in each cell type
 spot.comp.df <- seuratobj.aligned@meta.data %>%
-  select(spot.composition.collapse) %>%
+  select(spot.collapse) %>%
   rownames_to_column("spot")
 spot.comp.splited <- data.frame()
 for (i in 1:nrow(spot.comp.df)) {
-  spot.composition <- spot.comp.df$spot.composition.collapse[i]
+  spot.composition <- spot.comp.df$spot.collapse[i]
   
   if (grepl(pattern = "\\+", spot.composition)) {
     terms <- strsplit(spot.composition, "\\+")[[1]]
@@ -127,11 +127,11 @@ rownames(spot.comp.splited) <- NULL
 head(spot.comp.splited)
 
 spot.comp.df.alt <- seuratobj.aligned.alt@meta.data %>%
-  select(spot.composition.collapse) %>%
+  select(spot.collapse) %>%
   rownames_to_column("spot")
 spot.comp.splited.alt <- data.frame()
 for (i in 1:nrow(spot.comp.df.alt)) {
-  spot.composition <- spot.comp.df.alt$spot.composition.collapse[i]
+  spot.composition <- spot.comp.df.alt$spot.collapse[i]
   
   if (grepl(pattern = "\\+", spot.composition)) {
     terms <- strsplit(spot.composition, "\\+")[[1]]
