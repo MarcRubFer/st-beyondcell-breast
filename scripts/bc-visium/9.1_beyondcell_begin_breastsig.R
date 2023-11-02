@@ -7,6 +7,8 @@ library("tidyverse")
 library("tidygraph")
 library("patchwork")
 library("RColorBrewer")
+#devtools::install_github("igrabski/sc-SHC")
+library("scSHC")
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -73,28 +75,6 @@ bcKparRes <- function(bc.object, k.param, res){
   return(list.data)
   
 }
-#l <- lapply(X = k.param, FUN = function(x){
-#  res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
-#  a <- bcUMAP(bc.recomputed, pc =20, k.neighbors = x, res = res)
-#  clustree.graph <- clustree(a@meta.data, 
-#                             prefix = "bc_clusters_res.",
-#                             prop_filter = 0.1, 
-#                             node_colour = "sc3_stability",
-#                             return = "graph")
-#  
-#  max.stability <- clustree.graph %>%
-#    activate(nodes) %>%
-#    as.data.frame() %>%
-#    group_by(bc_clusters_res.) %>%
-#    summarise(median.stability = median(sc3_stability),
-#              n.clusters = length(unique(cluster))) %>%
-#    mutate(k.param = x)
-#  return(max.stability)
-#})
-#
-#l <- l %>%
-#  bind_rows() %>%
-#  mutate(k.param = as.factor(k.param))
 
 sc3.kparam <- bcKparRes(bc.object = bc.recomputed, k.param = k.param, res = res)
 sc3.kparam.plot <- ggplot(data=sc3.kparam, aes(x=bc_clusters_res., y=median.stability, group = k.param, color = k.param)) + 
@@ -170,6 +150,59 @@ patch.clustree <- clustree.plot | clustree.plot.alt
 ggsave(filename = "patch_clustree.png",
        plot = patch.clustree,
        path = "./results/plots/Beyondcell_oct23_breastsig//")
+
+# Test significance of clusters (sc-SHC package)
+# Round scaled data
+scaled <- round(bc.recomputed@scaled * 100, 0)
+
+# Compute Therapeutic Clusters (TCs)
+# We test significance at every resolution level previous selected. This parameter
+# could be change to test some particular resolutions.
+res <- c(0.07, 0.1, 0.2, 0.3, 0.4, 0.5)
+list.scSHC <- lapply(X = res, FUN = function(x){
+  original.clusters <- bc.recomputed@meta.data[colnames(scaled), ] %>%
+    pull(all_of(paste0("bc_clusters_res.",x))) %>%
+    as.character()
+  
+  new.clusters <- testClusters(scaled, 
+                               cluster_ids = original.clusters,
+                               batch = NULL, 
+                               alpha = 0.05, 
+                               num_features = 100, 
+                               num_PCs = 20, 
+                               parallel = FALSE)
+  return(as.data.frame(new.clusters[[1]]))
+  
+})
+TCs <- do.call(cbind, list.scSHC)  
+head(TCs)
+colnames(TCs) <- paste0("bc_scSHC_res.",res)
+rownames(TCs) <- colnames(scaled)
+TCs <- TCs %>%
+  mutate(bc_scSHC_res.0.3 = gsub(pattern = "^new", replacement = "scSHC-", x = bc_scSHC_res.0.3),
+         bc_scSHC_res.0.3 = as.factor(bc_scSHC_res.0.3))
+
+#TCs <- TCs %>%
+#  mutate(bc_clusters_scSHC_res.0.3 = str_remove(bc_clusters_new_res_0.1, pattern = "^new"),
+#         bc_clusters_new_renamed_res_0.1 = case_when(bc_clusters_new_res_0.1 == "2" ~ "1",
+#                                                     bc_clusters_new_res_0.1 == "3" ~ "2",
+#                                                     bc_clusters_new_res_0.1 == "1" ~ "3",
+#                                                     TRUE ~ bc_clusters_new_res_0.1),
+#         bc_clusters_new_res_0.1 = as.factor(bc_clusters_new_res_0.1),
+#         bc_clusters_new_renamed_res_0.1 = as.factor(bc_clusters_new_renamed_res_0.1))
+print(head(TCs))
+
+prueba <- bcAddMetadata(bc.recomputed,TCs)
+s1 <- bcClusters(prueba, UMAP = "beyondcell", idents = "bc_clusters_res.0.3", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - UMAP Beyondcell (res 0.1)")
+s1.scSHC <- bcClusters(prueba, UMAP = "beyondcell", idents = "bc_clusters_scSHC_res.0.3", pt.size = 1) +
+  ggtitle("BeyondCell Clusters - scSHC (res 0.1)")
+
+s1 / s1.scSHC
+
+bc.recomputed <- bcAddMetadata(bc.recomputed, TCs)
+head(bc.recomputed@meta.data)
+
 
 # Visualize whether the cells are clustered based on the number of genes detected per each cell.
 bc.nFeatureRNA <- bcClusters(bc.recomputed, 
