@@ -137,7 +137,8 @@ list.plots.scSHC <- lapply(res, function(x){
 })
 wrap_plots(list.plots.scSHC)
 
-#Plot of statistic significance ggsankey SCT vs scSHC at res selected 0.3
+# Plot of statistic significance (ggsankey bc-clusters vs bc-scSHC) at resolution
+# selected 0.3
 sankey.scSHC <- bc.recomputed@meta.data %>%
   select(bc_clusters_res.0.3, bc_scSHC_res.0.3) %>%
   make_long(bc_clusters_res.0.3, bc_scSHC_res.0.3) %>%
@@ -186,33 +187,34 @@ head(TCs)
 
 bc.recomputed <- bcAddMetadata(bc.recomputed, metadata = TCs)
 head(bc.recomputed@meta.data)
+
 # Visualize whether the cells are clustered based on the number of genes detected per each cell.
 bc.nFeatureRNA <- bcClusters(bc.recomputed, 
                              UMAP = "beyondcell", 
                              idents = "nFeature_Spatial", 
-                             pt.size = 1.5, 
-                             factor.col = FALSE) +
-  ggtitle("nFeatureRNA")
+                             pt.size = 0.75, 
+                             factor.col = FALSE) 
 
 bc.nCountRNA <- bcClusters(bc.recomputed, 
                            UMAP = "beyondcell", 
                            idents = "nCount_Spatial", 
-                           pt.size = 1.5, 
-                           factor.col = FALSE) +
-  ggtitle("nCountsRNA")
+                           pt.size = 0.75, 
+                           factor.col = FALSE) 
 
-bc.phases <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "Phase", pt.size = 1.5)
+bc.phases <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "Phase", pt.size = 0.75)
 
-bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "TCs_res.0.3", pt.size = 1, cols = TC.colors) 
-bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "TCs_res.0.3", pt.size = 1) +
-  ggtitle("BeyondCell Clusters - UMAP Seurat (res 0.1)")
-
+# Create color palette for TCs
 TC.colors <- c("TC-1" = "#00b2d7",
                "TC-2" = "#e3c26a",
                "TC-3" = "#903ca2",
                "TC-4" = "#3f8741",
                "TC-5" = "#ff7b00",
                "TC-6" = "#cb5c42")
+# Plot TCs dimplot
+bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "TCs_res.0.3", pt.size = 1, cols = TC.colors) 
+bc.clusters.seurat <- bcClusters(bc.recomputed, UMAP = "Seurat", idents = "TCs_res.0.3", pt.size = 1, cols = TC.colors)
+
+# Plot TCs spatial distribuiton
 spatial.bc.clusters <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "TCs_res.0.3", pt.size = 1.5, spatial = TRUE) 
 spatial.bc.clusters <- lapply(spatial.bc.clusters, function(x){
   x + scale_fill_manual(values = TC.colors) 
@@ -224,7 +226,7 @@ spatial.bc.clusters
 dual.colors <- c(
   "TUMOUR" = "#c4534e",
   "TME" = "#098cf0")
-bc.dual <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "spot.dual", pt.size = 1.5, cols = dual.colors)
+bc.dual <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "spot.dual", pt.size = 0.75, cols = dual.colors)
 
 spatial.dual <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "spot.dual", pt.size = 1.5, spatial = TRUE) 
 spatial.dual <- lapply(spatial.dual, function(x){
@@ -251,8 +253,6 @@ df.barplot <- df.barplot %>%
 df.barplot <- df.barplot %>%
   mutate(relat.prop = n / total)
 
-
-head(df.barplot)
 colors.categories <- toupper(c(#"#4fafe3",
   "MYELOID" ="#be7adc", #violet
   "CAFS" = "#dec36f", #ocre
@@ -272,11 +272,51 @@ ggsave(filename = "barplot_celltype_vs_TCs.png",
        plot = barplot.celltypes.TCs,
        path = "./results/plots/Beyondcell_oct23_breastsig//")
 
-((((bc.nFeatureRNA / bc.nCountRNA) | bc.clusters | bc.clusters.seurat) / barplot.celltypes.TCs) | (spatial.bc.clusters[[1]] / spatial.bc.clusters[[2]])) + plot_layout(widths = c(2,1))
+# Sankey ECs vs TCs
+bc.recomputed@meta.data
+
+EC.TC.colors <- c(ECs.colors,TC.colors)
+ECs.TCs <- bc.recomputed@meta.data %>%
+  select(ECs_res.0.2, TCs_res.0.3) %>%
+  make_long(ECs_res.0.2, TCs_res.0.3) %>%
+  ggplot(., aes(x = x
+                , next_x = next_x
+                , node = node
+                , next_node = next_node
+                , fill = factor(node)
+                , label = node)) + 
+  geom_sankey(flow.alpha = 0.5
+              #,flow.fill = "grey"
+              ,node.color = "black"
+              #,node.fill = "#aab756"
+              ,show.legend = T) + 
+  geom_sankey_label(size = 3, color = "black", fill= "white", hjust = 0.5) + 
+  scale_x_discrete(position = "top") + 
+  scale_fill_manual(values = EC.TC.colors) +
+  theme_sankey() +
+  theme(legend.position = "none",
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(face = "bold"))
+ECs.TCs
 
 
+bc.recomputed@meta.data$ECs_res.0.2 <- as.factor(bc.recomputed@meta.data$ECs_res.0.2)
+ECs.spatial <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "ECs_res.0.2", pt.size = 1.5, spatial = TRUE)
+ECs.spatial <- lapply(ECs.spatial, function(i){
+  i + scale_fill_manual(values = ECs.colors)
+})
+ECs.spatial <- wrap_plots(d, ncol = 1, nrow = 2) 
+ECs.spatial <- d + plot_layout(guides = "collect")
 
+upper <- plot_grid(bc.clusters, plot_grid(bc.phases,bc.dual, ncol = 1, labels = c("B","C")), spatial.bc.clusters, nrow = 1, rel_widths = c(1,0.7,1), labels = c("A","","D"))
+bottom <- plot_grid(bc.clusters.seurat, ECs.spatial, ECs.TCs, barplot.celltypes.TCs, nrow = 1, labels = c("E","F","G","H"), rel_widths = c(1.3,1,1,1.5))
 
+figure <- plot_grid(upper,NULL, bottom, ncol = 1, rel_heights = c(1,0.15,1))
+figure
+
+ggsave(filename = "figure.png",
+       plot = figure,
+       path = "./results/plots/Beyondcell_oct23_breastsig/")
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/beyondcell_create"), recursive = TRUE)
 
@@ -317,4 +357,4 @@ save(all.plots, file = paste0("./results/ggplots/beyondcell_create.RData"))
 
 # Save Data
 saveRDS(bc.recomputed, file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
-saveRDS(bc.recomputed.alt, file = "./results/analysis/beyondcell_allspots_breastsignature.alt.rds")
+
