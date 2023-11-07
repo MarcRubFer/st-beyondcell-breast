@@ -60,6 +60,10 @@ dea.gsea <- lapply(tcs, FUN = function(i) {
 }) %>%
   bind_rows()
 
+genes.by.cluster <- dea.gsea %>% 
+  group_by(TC) %>%
+  summarise(n_genes = n())
+
 
 # Perfom DEA for Overrepresentation analysis (ORA) with logfc 0.5 and 1
 dea.ora.0.5 <- FindAllMarkers(seuratobj.tcs, 
@@ -79,6 +83,10 @@ dea.ora.1 <- FindAllMarkers(seuratobj.tcs,
 dea.ora.1 <- dea.ora.1 %>%
   relocate(gene) %>%
   rename(TC = cluster)
+
+genes.by.cluster.ora1 <- dea.ora.1 %>%
+  group_by(TC) %>%
+  summarise(n_genes = n())
 
 # Save table
 dir.create(path = "./data/dea_tables/")
