@@ -17,40 +17,42 @@ dir.create(path = out.dir, recursive = TRUE)
 set.seed(1)
 
 # Read SeuratObjects
-seuratobj.distances <- readRDS("./results/analysis/seuratobj.distances.rds")
-seuratobj.distances.alt <- readRDS("./results/analysis/seuratobj.distances.alt.rds")
-
-# Read Beyondcell objects (Uncomment the necessary objects)
-# For bcScore compute with Ssc signature use these objects:
-#bc.recomputed <- readRDS("./results/analysis/beyondcellobject.rds")
-#bc.recomputed.alt <- readRDS("./results/analysis/beyondcellobject.alt.rds")
-
-# For bcScore compute with breast-Ssc signature use these others:
-bc.recomputed <- readRDS("./results/analysis/beyondcell_allspots_breastsignature.rds")
-bc.recomputed.alt <- readRDS("./results/analysis/beyondcell_allspots_breastsignature.alt.rds")
+seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
+bc.recomputed <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
 
 head(bc.recomputed@meta.data)
 
-# Drugs ranking
-## Defatul cutoff at 10%
-#bc.ranked <- bcRanks(bc.recomputed, idents = "bc_clusters_res.0.3")
+gs.breast <- GenerateGenesets(x = "./data/gmts/drug_signatures_classic_nodup.gmt")
 
+# Drugs ranking
 ## Establish cutoff  of 5% (more restrictive)
-bc.ranked <- bcRanks(bc.recomputed, idents = "bc_clusters_res.0.3",  resm.cutoff = c(0.05,0.95))
-bc.4squares <- bc4Squares(bc.ranked, idents = "bc_clusters_res.0.3")
+bc.ranked <- bcRanks(bc.recomputed, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+bc.4squares <- bc4Squares(bc.ranked, idents = "TCs_res.0.3")
 bc4squares.plots <- wrap_plots(bc.4squares)
 
 head(bc.ranked@ranks)
 
 # Select TOP-Differential-Drugs
 top.diff <- as.data.frame(bc.ranked@ranks) %>%
-  select(starts_with(match = "bc_clusters_res.0.3.group.")) %>%
+  select(starts_with(match = "TCs_res.0.3.group.")) %>%
   rownames_to_column("signature") %>%
-  pivot_longer(cols = starts_with("bc_clusters_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
+  pivot_longer(cols = starts_with("TCs_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
   filter(group != is.na(group),
          grepl("Differential", group)) %>%
   pull("signature") %>%
   unique()
+
+df.top.diff <- as.data.frame(top.diff) 
+df.top.diff <- df.top.diff %>%
+  separate(col = top.diff, 
+           into = c("drug","data.base","db.id"), 
+           sep = "_",
+           remove = F)
+head(df.top.diff)
+write.table(x = df.top.diff, 
+            file = "./results/tables/top.differential.drugs.tsv", 
+            sep = "\t",
+            row.names = F)
 
 names.drugs <- as.data.frame(FindDrugs(bc.ranked, x = top.diff)) %>%
   select(IDs, preferred.and.sigs)
@@ -59,8 +61,21 @@ head(names.drugs)
 
 # HeatMap Drugs
 # Matrix of TOP-Differential Drugs
+dim(bc.ranked@normalized)
 drugs.matrix <- bc.ranked@normalized[top.diff,]
 dim(drugs.matrix)
+
+col.order <- bc.ranked@meta.data %>%
+  select(TCs_res.0.3, spot.collapse) %>%
+  arrange(TCs_res.0.3, spot.collapse)
+
+col.order.spots <- col.order  %>%
+  rownames_to_column("spots") %>%
+  pull(spots)
+
+drugs.matrix.ordered <- drugs.matrix[,col.order.spots]
+drugs.matrix <- drugs.matrix.ordered
+
 ## Calculate maximum and minimum for matrix
 drugs.max.matrix <- max(apply(drugs.matrix, 1, function(row) max(row)))
 drugs.min.matrix <- min(apply(drugs.matrix, 1, function(row) min(row)))
@@ -75,14 +90,43 @@ datos_ordenados_drugs <- drugs.matrix[, orden_clusters]
 clusters_ordenados <- heatmap.clusters[orden_clusters]
 
 # Collapsed moas for breast-SSc signature
-collapsed.moas <- read_tsv(file = "./data/selected_breast_signatures - Hoja 3.tsv")
+collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
 collapsed.moas <- as.data.frame(collapsed.moas)
-rownames(collapsed.moas) <- collapsed.moas$signature_complete
+rownames(collapsed.moas) <- collapsed.moas$top.diff
 
 collapsed.moas <- collapsed.moas[match(rownames(datos_ordenados_drugs),collapsed.moas$signature_complete),]
 names.moas <- levels(factor(collapsed.moas$collapsed.MoAs))
 length.moas <- length(names.moas)
 col.moas <- colorRampPalette(brewer.pal(12,name = "Paired"))(length.moas)
+names(col.moas) <- names.moas
+
+col.moas <- c("#db4470",
+              "#5cc151",
+              "#9b58cf",
+              "#9bb932",
+              "#5c6fda",
+              "#cca939",
+              "#dd6fd1",
+              "#508f36",
+              "#c83f97",
+              "#63c385",
+              "#8850a1",
+              "#da8b2f",
+              "#5b70b5",
+              "#c45926",
+              "#43c4c4",
+              "#d5433c",
+              "#61a2da",
+              "#926a2e",
+              "#c190d8",
+              "#317341",
+              "#e286a5",
+              "#4a9f7c",
+              "#9c4c77",
+              "#abb061",
+              "#ae5050",
+              "#697329",
+              "#df936d")
 names(col.moas) <- names.moas
 
 #Colors for cell types categories
@@ -97,30 +141,37 @@ names(colors.categories)
 colors.categories <- colors.categories[order(names(colors.categories))]
 colors.categories
 
+TC.colors <- c("TC-1" = "#00b2d7",
+               "TC-2" = "#e5c22f",
+               "TC-3" = "#903ca2",
+               "TC-4" = "#3f8741",
+               "TC-5" = "#ff7b00",
+               "TC-6" = "#cb5c42")
 ## Create heatmap
 heatmap.drugs <- Heatmap(
-  datos_ordenados_drugs,
+  drugs.matrix,
   #drugs.matrix2.order,
   #drugs.matrix,
   name = "bcScore",
   cluster_columns = FALSE,
-  #top_annotation = HeatmapAnnotation(#df = col.order,
-  #                                   TCs = col.order$bc_clusters_res.0.3,
-  #                                   cell.type = col.order$spot.collapse),
-  #top_annotation = HeatmapAnnotation(clusters = clusters_ordenados,
-  #                                   cell.type = bc.ranked@meta.data$spot.collapse,
-  #                                   col = list(cell.type = colors.categories)),
-  top_annotation = HeatmapAnnotation(clusters = clusters_ordenados),
-  #right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
-  #                                col = list(MoA = col.moas)),
+  top_annotation = HeatmapAnnotation("TCs" = col.order$TCs_res.0.3,
+                                     "Cell type" = col.order$spot.collapse,
+                                     col = list("TCs" = TC.colors,
+                                                "Cell type" = colors.categories)),
+  right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
+                                  col = list(MoA = col.moas)),
+  #left_annotation = rowAnnotation(labels = c(1:15)),
+  #row_dend_reorder = TRUE,
   show_column_names = FALSE,
-  column_split = col.order$bc_clusters_res.0.3,
+  column_split = col.order$TCs_res.0.3,
   #column_order = col.order,
   row_names_gp = gpar(fontsize = 6),
-  #row_labels = collapsed.moas$preferred.drug.names,
-  row_split = 5,
+  row_labels = toupper(collapsed.moas$preferred.drug.names),
+  #row_km = 16,
+  #row_order = 1:16,
+  row_split = 16,
   #show_row_dend = F,
-  row_title = NULL,
+  #row_title = NULL,
   col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
 )      
@@ -135,9 +186,16 @@ png(filename = "./results/plots/Beyondcell_oct23_breastsig/heatmap_drugs_allspot
 draw(heatmap.drugs)
 dev.off()
 
-
-col.order <- bc.ranked@meta.data %>%
-  select(bc_clusters_res.0.3, spot.collapse) %>%
-  arrange(bc_clusters_res.0.3, spot.collapse)
-drugs.matrix2 <- drugs.matrix
-drugs.matrix2.order <- drugs.matrix2[,col.order]
+FindDrugs(bc.ranked, "GDC-0980")
+GDC0980 <- collapsed.moas %>%
+  filter(preferred.drug.names == "GDC-0980")
+PRIMA1 <- collapsed.moas %>%
+  filter(preferred.drug.names == "PRIMA-1") %>%
+  pull(top.diff)
+LAPATINIB <- collapsed.moas %>%
+  filter(preferred.drug.names == "LAPATINIB") %>%
+  pull(top.diff)
+AZD2014 <- collapsed.moas %>%
+  filter(preferred.drug.names == "AZD2014") %>%
+  pull(top.diff)
+bcSignatures(bc.ranked, UMAP = "beyondcell", signatures = list(values = AZD2014), pt.size = 1.5, spatial = T, mfrow = c(1,2))
