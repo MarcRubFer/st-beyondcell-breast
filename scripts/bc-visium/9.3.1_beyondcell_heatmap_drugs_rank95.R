@@ -49,6 +49,7 @@ df.top.diff <- df.top.diff %>%
            sep = "_",
            remove = F)
 head(df.top.diff)
+# Export top differential drugs
 write.table(x = df.top.diff, 
             file = "./results/tables/top.differential.drugs.tsv", 
             sep = "\t",
@@ -80,25 +81,17 @@ drugs.matrix <- drugs.matrix.ordered
 drugs.max.matrix <- max(apply(drugs.matrix, 1, function(row) max(row)))
 drugs.min.matrix <- min(apply(drugs.matrix, 1, function(row) min(row)))
 
-##1 Extract the number of cluster
-heatmap.clusters <- bc.ranked@meta.data$bc_clusters_res.0.3
-##2 Order the cluster vector
-orden_clusters <- order(heatmap.clusters)
-##3 Rearrange the drugs matrix in order by cluster
-datos_ordenados_drugs <- drugs.matrix[, orden_clusters]
-##4 Rearrange vector of cluster in order
-clusters_ordenados <- heatmap.clusters[orden_clusters]
-
 # Collapsed moas for breast-SSc signature
+## Import manual collapsed moas drugs
 collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
 collapsed.moas <- as.data.frame(collapsed.moas)
 rownames(collapsed.moas) <- collapsed.moas$top.diff
 
-collapsed.moas <- collapsed.moas[match(rownames(datos_ordenados_drugs),collapsed.moas$signature_complete),]
+#collapsed.moas <- collapsed.moas[match(rownames(datos_ordenados_drugs),collapsed.moas$signature_complete),]
 names.moas <- levels(factor(collapsed.moas$collapsed.MoAs))
 length.moas <- length(names.moas)
-col.moas <- colorRampPalette(brewer.pal(12,name = "Paired"))(length.moas)
-names(col.moas) <- names.moas
+#col.moas <- colorRampPalette(brewer.pal(12,name = "Paired"))(length.moas)
+#names(col.moas) <- names.moas
 
 col.moas <- c("#db4470",
               "#5cc151",
@@ -149,8 +142,7 @@ TC.colors <- c("TC-1" = "#00b2d7",
                "TC-6" = "#cb5c42")
 ## Create heatmap
 heatmap.drugs <- Heatmap(
-  drugs.matrix,
-  #drugs.matrix2.order,
+  t(scale(t(drugs.matrix))),
   #drugs.matrix,
   name = "bcScore",
   cluster_columns = FALSE,
@@ -163,7 +155,7 @@ heatmap.drugs <- Heatmap(
   #left_annotation = rowAnnotation(labels = c(1:15)),
   #row_dend_reorder = TRUE,
   show_column_names = FALSE,
-  column_split = col.order$TCs_res.0.3,
+  #column_split = col.order$TCs_res.0.3,
   #column_order = col.order,
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
@@ -172,13 +164,13 @@ heatmap.drugs <- Heatmap(
   row_split = 16,
   #show_row_dend = F,
   #row_title = NULL,
-  col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
-  heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
+  #col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
+  #heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
 )      
 heatmap.drugs
 heatmap.drugs <- draw(heatmap.drugs, merge_legend = TRUE)
 heatmap.drugs
-png(filename = "./results/plots/Beyondcell_oct23_breastsig/heatmap_drugs_allspots_breastsig_rank95.png",
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/heatmap_drugs_allspots_breastsig_rank95.png",
     width = 48,
     height = 24,
     units = "cm",
@@ -186,16 +178,83 @@ png(filename = "./results/plots/Beyondcell_oct23_breastsig/heatmap_drugs_allspot
 draw(heatmap.drugs)
 dev.off()
 
-FindDrugs(bc.ranked, "GDC-0980")
-GDC0980 <- collapsed.moas %>%
-  filter(preferred.drug.names == "GDC-0980")
-PRIMA1 <- collapsed.moas %>%
-  filter(preferred.drug.names == "PRIMA-1") %>%
-  pull(top.diff)
-LAPATINIB <- collapsed.moas %>%
-  filter(preferred.drug.names == "LAPATINIB") %>%
-  pull(top.diff)
-AZD2014 <- collapsed.moas %>%
-  filter(preferred.drug.names == "AZD2014") %>%
-  pull(top.diff)
-bcSignatures(bc.ranked, UMAP = "beyondcell", signatures = list(values = AZD2014), pt.size = 1.5, spatial = T, mfrow = c(1,2))
+# Analysis of Tumour TCs (TCs 3 to 6)
+TCs.tumours <- levels(bc.recomputed@meta.data$TCs_res.0.3)[3:6]
+cells.TCs.tumours <- bc.recomputed@meta.data %>%
+  filter(TCs_res.0.3 %in% TCs.tumours) %>%
+  rownames_to_column(var = "spots") %>%
+  pull(spots)
+
+bc.TCs.tumour <- bcSubset(bc.recomputed, cells = cells.TCs.tumours)
+bc.ranked.tumour <- bcRanks(bc.TCs.tumour, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+top.diff.tumour <- as.data.frame(bc.ranked.tumour@ranks) %>%
+  select(starts_with(match = "TCs_res.0.3.group.")) %>%
+  rownames_to_column("signature") %>%
+  pivot_longer(cols = starts_with("TCs_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
+  filter(group != is.na(group),
+         grepl("Differential", group)) %>%
+  pull("signature") %>%
+  unique()
+
+# HeatMap Drugs
+# Matrix of TOP-Differential Drugs
+dim(bc.ranked.tumour@normalized)
+drugs.matrix.tumour <- bc.ranked.tumour@normalized[top.diff.tumour,]
+dim(drugs.matrix.tumour)
+
+col.order.tumour <- bc.ranked.tumour@meta.data %>%
+  select(TCs_res.0.3, spot.collapse) %>%
+  arrange(TCs_res.0.3, spot.collapse)
+
+col.order.spots <- col.order.tumour  %>%
+  rownames_to_column("spots") %>%
+  pull(spots)
+
+drugs.matrix.ordered <- drugs.matrix.tumour[,col.order.spots]
+drugs.matrix.tumour <- drugs.matrix.ordered
+
+
+## Calculate maximum and minimum for matrix
+drugs.max.matrix <- max(apply(drugs.matrix.tumour, 1, function(row) max(row)))
+drugs.min.matrix <- min(apply(drugs.matrix.tumour, 1, function(row) min(row)))
+
+tmp <- t(scale(t(drugs.matrix.tumour)))
+tmp2 <- scale(tmp)
+heatmap.drugs.tumour <- Heatmap(
+  #drugs.matrix.tumour,
+  #tmp,
+  tmp2,
+  name = "bcScore",
+  cluster_columns = FALSE,
+  top_annotation = HeatmapAnnotation("TCs" = col.order.tumour$TCs_res.0.3,
+                                     "Cell type" = col.order.tumour$spot.collapse,
+                                     col = list("TCs" = TC.colors[3:6],
+                                                "Cell type" = colors.categories)),
+  #right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
+  #                                 col = list(MoA = col.moas)),
+  #left_annotation = rowAnnotation(labels = c(1:15)),
+  #row_dend_reorder = TRUE,
+  show_column_names = FALSE,
+  column_split = col.order.tumour$TCs_res.0.3,
+  #column_order = col.order,
+  row_names_gp = gpar(fontsize = 6),
+  #row_labels = toupper(collapsed.moas$preferred.drug.names),
+  #row_km = 16,
+  #row_order = 1:16,
+  cluster_rows = T,
+  row_split = 6,
+  #show_row_dend = F,
+  #row_title = NULL,
+  #col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
+  #heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
+)      
+heatmap.drugs.tumour
+heatmap.drugs.tumour <- draw(heatmap.drugs.tumour, merge_legend = TRUE)
+heatmap.drugs.tumour
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/heatmap_drugs_allspots_breastsig_rank95_TCtumour.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(heatmap.drugs.tumour)
+dev.off()
