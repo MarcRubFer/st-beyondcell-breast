@@ -87,11 +87,8 @@ collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.dr
 collapsed.moas <- as.data.frame(collapsed.moas)
 rownames(collapsed.moas) <- collapsed.moas$top.diff
 
-#collapsed.moas <- collapsed.moas[match(rownames(datos_ordenados_drugs),collapsed.moas$signature_complete),]
 names.moas <- levels(factor(collapsed.moas$collapsed.MoAs))
 length.moas <- length(names.moas)
-#col.moas <- colorRampPalette(brewer.pal(12,name = "Paired"))(length.moas)
-#names(col.moas) <- names.moas
 
 col.moas <- c("#db4470",
               "#5cc151",
@@ -140,10 +137,12 @@ TC.colors <- c("TC-1" = "#00b2d7",
                "TC-4" = "#3f8741",
                "TC-5" = "#ff7b00",
                "TC-6" = "#cb5c42")
+
+scaled.matrix <- t(scale(t(drugs.matrix)))
 ## Create heatmap
 heatmap.drugs <- Heatmap(
-  t(scale(t(drugs.matrix))),
   #drugs.matrix,
+  scaled.matrix,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order$TCs_res.0.3,
@@ -155,7 +154,7 @@ heatmap.drugs <- Heatmap(
   #left_annotation = rowAnnotation(labels = c(1:15)),
   #row_dend_reorder = TRUE,
   show_column_names = FALSE,
-  #column_split = col.order$TCs_res.0.3,
+  column_split = col.order$TCs_res.0.3,
   #column_order = col.order,
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
@@ -178,6 +177,7 @@ png(filename = "./results/plots/Beyondcell_oct23_DrugRank/heatmap_drugs_allspots
 draw(heatmap.drugs)
 dev.off()
 
+###############################################################################
 # Analysis of Tumour TCs (TCs 3 to 6)
 TCs.tumours <- levels(bc.recomputed@meta.data$TCs_res.0.3)[3:6]
 cells.TCs.tumours <- bc.recomputed@meta.data %>%
@@ -187,6 +187,11 @@ cells.TCs.tumours <- bc.recomputed@meta.data %>%
 
 bc.TCs.tumour <- bcSubset(bc.recomputed, cells = cells.TCs.tumours)
 bc.ranked.tumour <- bcRanks(bc.TCs.tumour, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+bc.ranked.tumour
+bc.4squares.tumour <- bc4Squares(bc.ranked.tumour, idents = "TCs_res.0.3")
+bc4squares.plots <- wrap_plots(bc.4squares)
+
+
 top.diff.tumour <- as.data.frame(bc.ranked.tumour@ranks) %>%
   select(starts_with(match = "TCs_res.0.3.group.")) %>%
   rownames_to_column("signature") %>%
@@ -195,6 +200,19 @@ top.diff.tumour <- as.data.frame(bc.ranked.tumour@ranks) %>%
          grepl("Differential", group)) %>%
   pull("signature") %>%
   unique()
+
+#Export differential drugs for Tumour TCs
+df.top.diff.tumour <- as.data.frame(top.diff.tumour) 
+df.top.diff.tumour <- df.top.diff.tumour %>%
+  separate(col = top.diff.tumour, 
+           into = c("drug","data.base","db.id"), 
+           sep = "_",
+           remove = F)
+head(df.top.diff.tumour)
+write.table(x = df.top.diff.tumour, 
+            file = "./results/tables/top.differential.drugs.TCs.tumour.tsv", 
+            sep = "\t",
+            row.names = F)
 
 # HeatMap Drugs
 # Matrix of TOP-Differential Drugs
@@ -215,34 +233,55 @@ drugs.matrix.tumour <- drugs.matrix.ordered
 
 
 ## Calculate maximum and minimum for matrix
-drugs.max.matrix <- max(apply(drugs.matrix.tumour, 1, function(row) max(row)))
-drugs.min.matrix <- min(apply(drugs.matrix.tumour, 1, function(row) min(row)))
+drugs.matrix.tumour.max <- max(apply(drugs.matrix.tumour, 1, function(row) max(row)))
+drugs.matrix.tumour.min <- min(apply(drugs.matrix.tumour, 1, function(row) min(row)))
 
-tmp <- t(scale(t(drugs.matrix.tumour)))
-tmp2 <- scale(tmp)
+# Collapsed moas for breast-SSc signature 
+## Import manual collapsed moas tumour drugs
+collapsed.moas.tumour <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.tumour.tsv")
+collapsed.moas.tumour <- as.data.frame(collapsed.moas.tumour)
+rownames(collapsed.moas.tumour) <- collapsed.moas.tumour$top.diff
+
+names.moas.tumour <- levels(factor(collapsed.moas.tumour$collapsed.MoAs))
+length.moas.tumour <- length(names.moas.tumour)
+
+cols.drugs.tumour <- c("#cd9046",
+                       "#9d5ccc",
+                       "#5eb04d",
+                       "#c84eb0",
+                       "#b4b540",
+                       "#676cc6",
+                       "#ce5235",
+                       "#4baf90",
+                       "#d24376",
+                       "#737b36",
+                       "#c177ae",
+                       "#6b9ad5",
+                       "#b96260")
+names(cols.drugs.tumour) <- names.moas.tumour
+
+scaled.tumour <- t(scale(t(drugs.matrix.tumour)))
+
 heatmap.drugs.tumour <- Heatmap(
   #drugs.matrix.tumour,
-  #tmp,
-  tmp2,
+  scaled.tumour,
+  #tmp2,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order.tumour$TCs_res.0.3,
                                      "Cell type" = col.order.tumour$spot.collapse,
                                      col = list("TCs" = TC.colors[3:6],
                                                 "Cell type" = colors.categories)),
-  #right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
-  #                                 col = list(MoA = col.moas)),
-  #left_annotation = rowAnnotation(labels = c(1:15)),
-  #row_dend_reorder = TRUE,
+  right_annotation = rowAnnotation(MoA = collapsed.moas.tumour$collapsed.MoAs,
+                                  col = list(MoA = cols.drugs.tumour)),
   show_column_names = FALSE,
   column_split = col.order.tumour$TCs_res.0.3,
-  #column_order = col.order,
   row_names_gp = gpar(fontsize = 6),
-  #row_labels = toupper(collapsed.moas$preferred.drug.names),
+  row_labels = toupper(collapsed.moas.tumour$preferred.drug.names),
   #row_km = 16,
-  #row_order = 1:16,
+  #row_order = as.factor(toupper(collapsed.moas.tumour$preferred.drug.names)),
   cluster_rows = T,
-  row_split = 6,
+  row_split = 7,
   #show_row_dend = F,
   #row_title = NULL,
   #col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
@@ -258,3 +297,164 @@ png(filename = "./results/plots/Beyondcell_oct23_DrugRank/heatmap_drugs_allspots
     res = 320)
 draw(heatmap.drugs.tumour)
 dev.off()
+
+###############################################################################
+# Analysis of TME TCs (TCs 1 and 2)
+TCs.TME <- levels(bc.recomputed@meta.data$TCs_res.0.3)[1:2]
+cells.TCs.TME <- bc.recomputed@meta.data %>%
+  filter(TCs_res.0.3 %in% TCs.TME) %>%
+  rownames_to_column(var = "spots") %>%
+  pull(spots)
+
+bc.TCs.TME <- bcSubset(bc.recomputed, cells = cells.TCs.TME)
+
+bc.ranked.TME <- bcRanks(bc.TCs.TME, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+bc.ranked.TME@meta.data$TCs_res.0.3 <- as.character(bc.ranked.TME@meta.data$TCs_res.0.3)
+bc.ranked.TME@meta.data$TCs_res.0.3 <- as.factor(bc.ranked.TME@meta.data$TCs_res.0.3)
+bc.ranked.TME@ranks$TCs_res.0.3
+bc.ranked.TME2 <- bcRanks(bc.ranked.TME, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+bc.4squares.tme2 <- bc4Squares(bc.ranked.TME2, idents = "TCs_res.0.3")
+bc4squares.plots.tme2 <- wrap_plots(bc.4squares.tme2)
+
+top.diff.TME <- as.data.frame(bc.ranked.TME@ranks) %>%
+  select(starts_with(match = "TCs_res.0.3.group.")) %>%
+  rownames_to_column("signature") %>%
+  pivot_longer(cols = starts_with("TCs_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
+  filter(group != is.na(group),
+         grepl("Differential", group)) %>%
+  pull("signature") %>%
+  unique()
+
+#Export differential drugs for Tumour TCs
+df.top.diff.TME <- as.data.frame(top.diff.TME) 
+df.top.diff.TME <- df.top.diff.TME %>%
+  separate(col = top.diff.TME, 
+           into = c("drug","data.base","db.id"), 
+           sep = "_",
+           remove = F)
+head(df.top.diff.TME)
+write.table(x = df.top.diff.TME, 
+            file = "./results/tables/top.differential.drugs.TCs.TME.tsv", 
+            sep = "\t",
+            row.names = F)
+
+# HeatMap Drugs
+# Matrix of TOP-Differential Drugs
+dim(bc.ranked.TME@normalized)
+drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
+dim(drugs.matrix.TME)
+
+col.order.TME <- bc.ranked.TME@meta.data %>%
+  select(TCs_res.0.3, spot.collapse) %>%
+  arrange(TCs_res.0.3, spot.collapse)
+
+col.order.spots.tme <- col.order.TME  %>%
+  rownames_to_column("spots") %>%
+  pull(spots)
+
+drugs.matrix.ordered <- drugs.matrix.TME[,col.order.spots.tme]
+drugs.matrix.TME <- drugs.matrix.ordered
+
+# Collapsed moas for breast-SSc signature 
+## Import manual collapsed moas TME drugs
+collapsed.moas.TME <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.TME.tsv")
+collapsed.moas.TME <- as.data.frame(collapsed.moas.TME)
+rownames(collapsed.moas.TME) <- collapsed.moas.TME$top.diff
+
+names.moas.TME <- levels(factor(collapsed.moas.TME$collapsed.MoAs))
+length.moas.TME <- length(names.moas.TME)
+
+cols.drugs.TME <- c("#cd9046",
+                       "#9d5ccc",
+                       "#5eb04d",
+                       "#c84eb0",
+                       "#b4b540",
+                       "#676cc6",
+                       "#ce5235",
+                       "#4baf90",
+                       "#d24376",
+                       "#737b36",
+                       "#c177ae",
+                       "#6b9ad5",
+                       "#b96260")
+names(cols.drugs.TME) <- names.moas.TME
+
+
+## Calculate maximum and minimum for matrix
+drugs.matrix.TME.max <- max(apply(drugs.matrix.TME, 1, function(row) max(row)))
+drugs.matrix.TME.min <- min(apply(drugs.matrix.TME, 1, function(row) min(row)))
+
+scaled.tme <- t(scale(t(drugs.matrix.TME)))
+## Calculate maximum and minimum for matrix
+drugs.matrix.TME.max <- max(apply(scaled.tme, 1, function(row) max(row)))
+drugs.matrix.TME.min <- min(apply(scaled.tme, 1, function(row) min(row)))
+
+
+heatmap.drugs.TME <- Heatmap(
+  #drugs.matrix.TME,
+  #scaled.tme,
+  t(scaled.tme.01),
+  #tmp2,
+  name = "bcScore",
+  cluster_columns = FALSE,
+  top_annotation = HeatmapAnnotation("TCs" = col.order.TME$TCs_res.0.3,
+                                     "Cell type" = col.order.TME$spot.collapse,
+                                     col = list("TCs" = TC.colors[1:2],
+                                                "Cell type" = colors.categories)),
+  right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
+                                   col = list(MoA = cols.drugs.TME)),
+  show_column_names = FALSE,
+  column_split = col.order.TME$TCs_res.0.3,
+  #column_order = col.order,
+  row_names_gp = gpar(fontsize = 6),
+  row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
+  #row_km = 16,
+  #row_order = 1:16,
+  cluster_rows = T,
+  row_split = 6,
+  #show_row_dend = F,
+  #row_title = NULL,
+  #col = colorRamp2(c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max), c("blue", "white", "red")),
+  #heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
+)      
+heatmap.drugs.TME
+heatmap.drugs.TME <- draw(heatmap.drugs.TME, merge_legend = TRUE)
+heatmap.drugs.TME
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/heatmap_drugs_allspots_breastsig_rank95_TC-TME.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(heatmap.drugs.TME)
+dev.off()
+
+###############################################################################
+
+
+bc.TCs.TME
+bc.TCs.tumour
+
+bcSignatures(bc.recomputed, signatures = list(values = "Staurosporine_GDSC_1034"), spatial = T, mfrow = c(1,2))
+
+
+bcU
+
+
+scale_O_1 <- function(x){(x-min(x))/(max(x)-min(x))}
+
+scaled.tme.01 <- apply(drugs.matrix.TME,1,scale_O_1)
+
+
+df <- bc.ranked@meta.data %>%
+  select(B.cells:T.cells,spot.collapse,TCs_res.0.3) %>%
+  filter(TCs_res.0.3 == "TC-3" | TCs_res.0.3 == "TC-4") %>%
+  pivot_longer(cols = c(B.cells:T.cells), names_to = "cell.type", values_to = "proportion") %>%
+  mutate(spot.collapse = as.factor(spot.collapse),
+         TCs_res.0.3 = as.factor(TCs_res.0.3),
+         cell.type = as.factor(cell.type))
+
+ggplot(data = df, aes(x = spot.collapse, y = proportion)) +
+  geom_boxplot(aes(fill = cell.type)) +
+  facet_wrap(vars(TCs_res.0.3))
+
+drugs.matrix.TME
