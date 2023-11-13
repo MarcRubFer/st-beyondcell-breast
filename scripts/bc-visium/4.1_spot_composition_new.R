@@ -54,6 +54,10 @@ cell.proportions <- seuratobj.deconvoluted@meta.data %>%
   )
 head(cell.proportions)
 
+# Add metadata about cell spot composition
+seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = cell.proportions)
+head(seuratobj.spotcomp)
+
 # BarPlot of number of spots by category
 
 
@@ -112,9 +116,7 @@ boxp.props <- as.ggplot(gt)
 boxp.props 
 
 
-seuratobj.spotcomp <- seuratobj.deconvoluted
-seuratobj.spotcomp <- AddMetaData(seuratobj.deconvoluted, metadata = cell.proportions)
-head(seuratobj.spotcomp)
+
 
 
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.collapse", cols = colors) + plot_layout(guides = "collect") &

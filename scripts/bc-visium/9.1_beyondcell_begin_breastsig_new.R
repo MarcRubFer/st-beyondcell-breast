@@ -68,6 +68,7 @@ clustree.plot <- clustree(bc.recomputed@meta.data,
                           prefix = "bc_clusters_res.",
                           node_colour = "sc3_stability") 
 
+
 # Save to svg to add resolutions labels
 ggsave(filename = "clustree.svg",
        plot = clustree.plot,
@@ -274,6 +275,15 @@ ggsave(filename = "barplot_celltype_vs_TCs.png",
 
 # Sankey ECs vs TCs
 bc.recomputed@meta.data
+ECs.colors <- c("EC-1" = "#ff944c",
+                "EC-2" = "#76b74b",
+                "EC-3" = "#8762c9",
+                "EC-4" = "#f65b9a",
+                "EC-5" = "#6d8cce",
+                "EC-6" = "#b76512", 
+                "EC-7" = "#4db497",
+                "EC-8" = "#c26083",
+                "EC-9" = "#6c823c")
 
 EC.TC.colors <- c(ECs.colors,TC.colors)
 ECs.TCs <- bc.recomputed@meta.data %>%

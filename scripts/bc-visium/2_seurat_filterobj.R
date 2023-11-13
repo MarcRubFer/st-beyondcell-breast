@@ -99,6 +99,10 @@ sf.feat.after <- SpatialFeaturePlot(seuratobj.filtered, features = "nFeature_Spa
 post.spatial <- (sf.mt.after | sf.rb.after ) / (sf.count.after | sf.feat.after) 
 post.spatial
 
+# Save data
+dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
+saveRDS(seuratobj.filtered, file = "./results/analysis/seuratobj.filtered.rds")
+
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/filtering"), recursive = TRUE)
 ggsave(filename = paste0(out.dir,"/plots/filtering/patch.prefiltering.violin.png"),
@@ -113,7 +117,3 @@ ggsave(filename = paste0(out.dir,"/plots/filtering/patch.postfiltering.spatial.p
 dir.create(path = paste0(out.dir,"/ggplots"), recursive = TRUE)
 all.plots <- list(pre.violin, pre.spatial, post.violin, post.spatial)
 save(all.plots, file = paste0("./results/ggplots/filter_plots.RData"))
-
-# Save data
-dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
-saveRDS(seuratobj.filtered, file = "./results/analysis/seuratobj.filtered.rds")

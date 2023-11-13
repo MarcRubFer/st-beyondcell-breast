@@ -140,28 +140,28 @@ SpatialDimPlot(seuratobj.phase)
 ## Alternative regression
 ## (see alternative workflow here : https://satijalab.org/seurat/articles/cell_cycle_vignette.html#:~:text=This%20means%20that%20signals%20separating,regressed%20out%20of%20the%20data)
 ## C
-seuratobj.phase.alt <- seuratobj.phase
-seuratobj.phase.alt$CC.difference <- seuratobj.phase.alt$S.Score - seuratobj.phase.alt$G2M.Score
-seuratobj.phase.alt <- SCTransform(seuratobj.phase.alt, 
-                 assay = "Spatial", 
-                 vars.to.regress = "CC.difference",
-                 return.only.var.genes = TRUE, 
-                 verbose = TRUE,
-                 min_cells = 100)
-seuratobj.phase.alt <- RunPCA(seuratobj.phase.alt, 
-            assay = "SCT", 
-            npcs = 50, 
-            features = VariableFeatures(seuratobj.phase.alt))
-
-cell.cycle.with.alt <- DimPlot(seuratobj.phase.alt)
-cell.cycle.phase.with.alt <- DimPlot(seuratobj.phase.alt, split.by = "Phase")
-cell.cycle.slide.with.alt <- CellCyclebyIdent(seuratobj.phase.alt, 
-                                          split = "orig.ident")
-
-patch.cell.cycle.with.alt <- cell.cycle.with.alt + cell.cycle.phase.with.alt + wrap_plots(cell.cycle.slide.with.alt) +
-  plot_layout(design = layout) +
-  plot_annotation(title = "Cycle regression alternative (difference between the G2M and S)")
-SpatialDimPlot(seuratobj.phase.alt)
+#seuratobj.phase.alt <- seuratobj.phase
+#seuratobj.phase.alt$CC.difference <- seuratobj.phase.alt$S.Score - seuratobj.phase.alt$G2M.Score
+#seuratobj.phase.alt <- SCTransform(seuratobj.phase.alt, 
+#                 assay = "Spatial", 
+#                 vars.to.regress = "CC.difference",
+#                 return.only.var.genes = TRUE, 
+#                 verbose = TRUE,
+#                 min_cells = 100)
+#seuratobj.phase.alt <- RunPCA(seuratobj.phase.alt, 
+#            assay = "SCT", 
+#            npcs = 50, 
+#            features = VariableFeatures(seuratobj.phase.alt))
+#
+#cell.cycle.with.alt <- DimPlot(seuratobj.phase.alt)
+#cell.cycle.phase.with.alt <- DimPlot(seuratobj.phase.alt, split.by = "Phase")
+#cell.cycle.slide.with.alt <- CellCyclebyIdent(seuratobj.phase.alt, 
+#                                          split = "orig.ident")
+#
+#patch.cell.cycle.with.alt <- cell.cycle.with.alt + cell.cycle.phase.with.alt + wrap_plots(cell.cycle.slide.with.alt) +
+#  plot_layout(design = layout) +
+#  plot_annotation(title = "Cycle regression alternative (difference between the G2M and S)")
+#SpatialDimPlot(seuratobj.phase.alt)
 
 # Save plots and ggplots
 
@@ -181,9 +181,9 @@ ggsave(filename = "barplot_celltypes_phases.png",
 ggsave(filename = "cell_cycle_regressed.png", 
        plot = patch.cell.cycle.with, 
        path = "./results/plots/SCT_cellcycle/")
-ggsave(filename = "cell_cycle_regressed_alternative.png", 
-       plot = patch.cell.cycle.with.alt, 
-       path = "./results/plots/SCT_cellcycle/")
+#ggsave(filename = "cell_cycle_regressed_alternative.png", 
+#       plot = patch.cell.cycle.with.alt, 
+#       path = "./results/plots/SCT_cellcycle/")
 
 all.plots <- list(cell.cycle.without, cell.cycle.phase.without, cell.cycle.slide.without, patch.cell.cycle.without,
                   spots.by.phase,barplot.celltypes.phases,
@@ -193,4 +193,4 @@ save(all.plots, file = paste0("./results/ggplots/cell_cycle.RData"))
 
 # Save Data
 saveRDS(seuratobj.phase, file = paste0(out.dir,"/analysis/seuratobj.phase.rds"))
-saveRDS(seuratobj.phase.alt, file = paste0(out.dir,"/analysis/seuratobj.phase_alternative.rds"))
+#saveRDS(seuratobj.phase.alt, file = paste0(out.dir,"/analysis/seuratobj.phase_alternative.rds"))
