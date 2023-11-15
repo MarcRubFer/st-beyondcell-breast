@@ -16,7 +16,10 @@ library("ggtree")
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
 
-reactome.gmt <- readGMT(x= "./data/gmts/c2.cp.reactome.v2023.2.Hs.symbols.gmt")
+# Read SeuratObjects
+seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
+
+reactome.gmt <- readGMT(x= "./data/gmts/c2.cp.reactome.v2023.1.Hs.symbols.gmt")
 
 # stablish seed
 set.seed(1)
