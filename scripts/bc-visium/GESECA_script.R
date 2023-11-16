@@ -26,9 +26,11 @@ E <- x@scale.data
 prefix=""
 
 res <- obj
-pathway <- reactome.gmt[[2]]
+pathway <- reactome.gmt[[5]]
 pathway <- intersect(unique(pathway), rownames(E))
 
+split <- E[pathway, 1:5, drop=FALSE]
+colSums(split)
 score <- colSums(E[pathway, , drop=FALSE])/sqrt(length(pathway))
 score <- scale(score, center=TRUE, scale=F)
 
