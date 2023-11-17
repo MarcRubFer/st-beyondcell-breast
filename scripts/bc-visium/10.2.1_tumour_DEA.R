@@ -25,7 +25,7 @@ seurat.tumour <- subset(seuratobj.tcs, cells = cells.TCs.tumours)
 
 DefaultAssay(seurat.tumour) <- "Spatial"
 Idents(seurat.tumour) <- "TCs_res.0.3"
-tumour.dea.gsea <- lapply(tcs, FUN = function(i) {
+tumour.dea.gsea <- lapply(TCs.tumours, FUN = function(i) {
   markers <- FindMarkers(seuratobj.tcs, 
                          ident.1 = i, 
                          min.pct = 0, 
