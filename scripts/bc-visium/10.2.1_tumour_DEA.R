@@ -23,11 +23,16 @@ cells.TCs.tumours <- seuratobj.tcs@meta.data %>%
 # Subset seurat object for Tumour TCs cells
 seurat.tumour <- subset(seuratobj.tcs, cells = cells.TCs.tumours)
 
+# Restablish levels properly
+seurat.tumour$TCs_res.0.3 <- as.character(seurat.tumour$TCs_res.0.3)
+seurat.tumour$TCs_res.0.3 <- as.factor(seurat.tumour$TCs_res.0.3)
+
+
 DefaultAssay(seurat.tumour) <- "Spatial"
 Idents(seurat.tumour) <- "TCs_res.0.3"
 tumour.dea.gsea <- lapply(TCs.tumours, FUN = function(i) {
-  markers <- FindMarkers(seuratobj.tcs, 
-                         ident.1 = i, 
+  markers <- FindMarkers(seurat.tumour, 
+                         ident.1 = "TC-3", 
                          min.pct = 0, 
                          logfc.threshold = 0, 
                          test.use = "wilcox")
