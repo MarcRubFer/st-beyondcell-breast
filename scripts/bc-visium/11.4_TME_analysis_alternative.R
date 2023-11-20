@@ -99,10 +99,15 @@ ggplot(distrib.total, aes(x=Cancer.Epithelial, y=enrichment)) +
   facet_grid(vars(TCs_res.0.3))
 
 library(corrplot)
+library(ggstatsplot)
 
 corr.drugs <- distrib.total %>%
   group_by(TCs_res.0.3,signatures) %>%
-  summarise(cor = cor(Cancer.Epithelial,enrichment))
+  summarise(cor = cor(Cancer.Epithelial,enrichment)) 
+
+ggplot(corr.drugs, aes(x = signatures, y=cor)) +
+  geom_bar(stat = "identity") +
+  facet_grid(vars(TCs_res.0.3))
 
 ggplot(corr.drugs, aes(x=cor,y=signatures)) +
   geom_bar(stat = "identity") +
@@ -112,3 +117,66 @@ ggplot(distrib.total, aes(x=Cancer.Epithelial, y=enrichment, colour = TCs_res.0.
   geom_point() +
   geom_smooth(method = "lm") +
   facet_wrap(vars(signatures))
+
+importazole <- distrib.total %>%
+  filter(signatures == "importazole_CTRP_A02481876") 
+importazole
+grouped_ggscatterstats(data = importazole,
+                       x = Cancer.Epithelial,
+                       y = enrichment,
+                       grouping.var = TCs_res.0.3,
+                       plotgrid.args = list(nrow = 2,
+                                            ncol = 1),
+                       marginal = F,
+                       bf.message = F,
+                       ggplot.component = list(ylim(-50,50),
+                                               xlim(0,1)),
+                       annotation.args = list(
+                         title = "IMPORTAZOLE",
+                         subtitle = "Correlation Cancer Epithelial proportion vs BCS enrichment"
+                       ))
+
+
+staurosporine <- distrib.total %>%
+  filter(signatures == "Staurosporine_GDSC_1034") %>%
+  grouped_ggscatterstats(data = .,
+                         x = Cancer.Epithelial,
+                         y = enrichment,
+                         grouping.var = TCs_res.0.3,
+                         plotgrid.args = list(nrow = 2,
+                                              ncol = 1),
+                         marginal = F,
+                         bf.message = F,
+                         ggplot.component = list(ylim(-75,75),
+                                                 xlim(0,1)),
+                         annotation.args = list(
+                           title = "STAUROSPORINE",
+                           subtitle = "Correlation Cancer Epithelial proportion vs BCS enrichment"
+                         ))
+staurosporine
+
+TC1.drugs <- distrib.total %>%
+  filter(TCs_res.0.3 == "TC-1")
+
+drugs <- levels(as.factor(TC1.drugs$signatures))
+
+plots <- lapply(drugs, function(drug){
+  df <- TC1.drugs %>%
+    filter(signatures == drug) %>%
+    grouped_ggscatterstats(data = .,
+                           x = Cancer.Epithelial,
+                           y = enrichment,
+                           grouping.var = TCs_res.0.3,
+                           plotgrid.args = list(nrow = 2,
+                                                ncol = 1),
+                           marginal = F,
+                           bf.message = F,
+                           ggplot.component = list(ylim(-75,75),
+                                                   xlim(0,1),
+                                                   ggtitle(drug)),
+                           annotation.args = list(
+                             title = drug,
+                             subtitle = "Correlation Cancer Epithelial proportion vs BCS enrichment"
+                           ))
+})
+wrap_plots(plots, ncol = 5)

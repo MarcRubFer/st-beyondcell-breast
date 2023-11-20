@@ -91,7 +91,7 @@ drugs.matrix.TME <- drugs.matrix.TME[,col.order.spots.tme]
 # col.order without spot.collapse
 drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
 col.order.TME2 <- bc.ranked.TME@meta.data %>%
-  select(TCs_res.0.3, Cancer.Epithelial) %>%
+  select(TCs_res.0.3, Cancer.Epithelial,spot.collapse) %>%
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
 col.order.spots.tme2 <- col.order.TME2  %>%
@@ -135,7 +135,11 @@ drugs.matrix.TME.min <- min(apply(drugs.matrix.TME, 1, function(row) min(row)))
 #drugs.matrix.TME.min <- min(apply(scaled.tme, 1, function(row) min(row)))
 
 # Scale color for cancer epithelial
-col_cancer = colorRamp2(c(0, 0.5, 1), c("blue", "white", "red"))
+n = length(col.order.TME2$Cancer.Epithelial)
+min_v = round(min(col.order.TME2$Cancer.Epithelial), 2)
+max_v = round(max(col.order.TME2$Cancer.Epithelial), 2)
+Var = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
+col_cancer = colorRamp2(breaks = c(0,1),hcl_palette = hcl.pals(type = "viridis"))
 
 
 heatmap.drugs.TME <- Heatmap(
@@ -143,16 +147,16 @@ heatmap.drugs.TME <- Heatmap(
   drugs.matrix.TME2,
   name = "bcScore",
   cluster_columns = FALSE,
-  #top_annotation = HeatmapAnnotation("TCs" = col.order.TME$TCs_res.0.3,
-  #                                   "Cell type" = col.order.TME$spot.collapse,
-  #                                   "Cancer Epith" = col.order.TME$Cancer.Epithelial,
-  #                                   col = list("TCs" = TC.colors[1:2],
-  #                                              "Cell type" = colors.categories,
-  #                                              "Cancer Epith" = col_cancer)),
   top_annotation = HeatmapAnnotation("TCs" = col.order.TME2$TCs_res.0.3,
                                      "Cancer Epith" = col.order.TME2$Cancer.Epithelial,
-                                     col = list("TCs" = TC.colors[1:2])),
-                                                #"Cancer Epith" = "red")),
+                                     "Cell type" = col.order.TME2$spot.collapse,
+                                     col = list("TCs" = TC.colors[1:2],
+                                                "Cell type" = colors.categories,
+                                                "Cancer Epith" = Var)),
+  #top_annotation = HeatmapAnnotation("TCs" = col.order.TME2$TCs_res.0.3,
+  #                                   "Cancer Epith" = col.order.TME2$Cancer.Epithelial,
+  #                                   col = list("TCs" = TC.colors[1:2],
+  #                                              "Cancer Epith" = Var)),
   right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
                                    col = list(MoA = cols.drugs.TME)),
   show_column_names = FALSE,
