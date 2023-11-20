@@ -22,7 +22,9 @@ dir.create(path = out.dir, recursive = TRUE)
 seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
 bc.recomputed <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
 
+
 reactome.gmt <- readGMT(x= "./data/gmts/c2.cp.reactome.v2023.2.Hs.symbols.gmt")
+reactome.bc.gmt <- GenerateGenesets(x= "./data/gmts/reactome_bc_modificado.gmt")
 fgseaRes.TME <- read_tsv("./results/tables/TC1_TC2_fGSEA_results.tsv")
 
 # Analysis of TME TCs (TCs 1 and 2)
@@ -35,10 +37,22 @@ cells.TCs.TME <- bc.recomputed@meta.data %>%
 seurat.TME <- subset(seuratobj.tcs, cells = cells.TCs.TME)
 dim(seurat.TME)
 
-reactome.bc.gmt <- GenerateGenesets(x= "./data/gmts/reactome_bc_modificado.gmt")
 bc.TME.reactome <- bcScore(sc = seurat.TME,
                            gs = reactome.bc.gmt,
                            expr.thres = 0.1)
+
+# Number of NAs
+n.NA <- data.frame(nNAs = colSums(is.na(bc.TME.reactome@normalized)),
+                   row.names = colnames(bc.TME.reactome@normalized))
+bc.TME.reactome <- bcAddMetadata(bc.TME.reactome, n.NA)
+bc.TME.reactome@meta.data
+
+# Filter out spots with a high percentage of NAs
+bc.TME.reactome <- bcSubset(bc.TME.reactome, nan.cells = 0.95)
+
+# Replace NAs by 0s
+bc.TME.reactome@normalized[is.na(bc.TME.reactome@normalized)] <- 0
+bc.TME.reactome <- bcRecompute(bc.TME.reactome, slot = "normalized")
 
 bc.TME.reactome <- bcUMAP(bc.TME.reactome, 
                         pc = 10, 
@@ -75,7 +89,7 @@ TC.colors <- c("TC-1" = "#00b2d7",
 
 # Extract normalized data for top50 pathway
 pathway.matrix <- bc.TME.reactome@normalized[top.50,]
-pathway.matrix <- bc.TME.reactome@scaled[top.50,]
+pathway.matrix.scaled <- bc.TME.reactome@scaled[top.50,]
 dim(pathway.matrix)
 
 col.order <- bc.TME.reactome@meta.data %>%
@@ -87,13 +101,13 @@ col.order.spots <- col.order  %>%
   pull(spots)
 
 pathway.matrix <- pathway.matrix[,col.order.spots]
+pathway.matrix.scaled <- pathway.matrix.scaled[ ,col.order.spots]
 
-scaled.matrix <- t(scale(t(pathway.matrix)))
 
 ## Create heatmap
 heatmap.pathway <- Heatmap(
-  pathway.matrix,
-  #scaled.matrix,
+  #pathway.matrix,
+  pathway.matrix.scaled,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order$TCs_res.0.3,
@@ -109,7 +123,7 @@ heatmap.pathway <- Heatmap(
   #row_dend_reorder = TRUE,
   show_column_names = FALSE,
   column_split = col.order$TCs_res.0.3,
-  column_title_gp = gpar(fontsize = 6, angle = 90),
+  column_title_gp = gpar(fontsize = 10),
   #column_order = col.order,
   row_names_gp = gpar(fontsize = 6),
   #row_labels = toupper(collapsed.moas$preferred.drug.names),

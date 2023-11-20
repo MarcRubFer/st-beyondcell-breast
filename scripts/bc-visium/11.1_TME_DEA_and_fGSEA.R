@@ -10,22 +10,23 @@ library("viridis")
 library("RColorBrewer")
 library("fgsea")
 
-
+# stablish seed
+set.seed(1)
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
 
 # Read SeuratObjects
-seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
+#seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
 
+seurat.TME <- readRDS(file = "./results/analysis/seuratobj.TME-TCs.rds")
+# Load gmts
 reactome.gmt <- readGMT(x= "./data/gmts/c2.cp.reactome.v2023.2.Hs.symbols.gmt")
 
-# stablish seed
-set.seed(1)
 
 # Change to Spatial assay and establish TCs as idents
-DefaultAssay(seuratobj.tcs) <- "Spatial"
-Idents(seuratobj.tcs) <- "TCs_res.0.3"
+DefaultAssay(seurat.TME) <- "Spatial"
+Idents(seurat.TME) <- "TCs_res.0.3"
 
 # Check if results were obtained previously
 path.to.results <- "./results/tables/TC1_TC2_findMarkers_results.tsv"
@@ -35,7 +36,7 @@ if (file.exists(path.to.results)) {
   TME.dea.gsea <- read_tsv(file = "./results/tables/TC1_TC2_findMarkers_results.tsv")
 } else {
   # Obtain differential expressed markers/genes between TC-1 and TC-2
-  TME.dea.gsea <- FindMarkers(seuratobj.tcs, 
+  TME.dea.gsea <- FindMarkers(seurat.TME, 
                             ident.1 = "TC-1",
                             ident.2 = "TC-2",
                             min.pct = 0, 
@@ -131,18 +132,12 @@ barplot3 <- barplot.data2 %>%
   scale_x_continuous(breaks = c(1:10)) 
 barplot3
 
-top10.pathways <- fgseaRes %>%
-  filter(padj < 0.05) %>%
-  mutate(UP_DOWN = case_when(NES > 0 ~ "UP",
-                             TRUE ~ "DOWN")) %>%
-  group_by(UP_DOWN) %>%
-  arrange(desc(NES)) %>%
-  slice_max(NES, n = 10) 
-  
-ribosomal <- seuratobj.tcs@meta.data %>%
-  select(percent.rb,spot.collapse,TCs_res.0.3) %>%
-  filter(TCs_res.0.3 == "TC-1" | TCs_res.0.3 == "TC-2") %>%
-  ggplot(aes(x=TCs_res.0.3, y=percent.rb)) +
-  geom_boxplot(aes(fill = spot.collapse))
-ribosomal
-
+ggsave(filename = "TME_barplot_fGSEA_pathways.png",
+       plot = barplot,
+       path = "./results/plots/TC_TME_analysis/")
+ggsave(filename = "TME_barplot_fGSEA_pathways_annotated.png",
+       plot = barplot2,
+       path = "./results/plots/TC_TME_analysis/")
+ggsave(filename = "TME_barplot_fGSEA_metapathways.png",
+       plot = barplot3,
+       path = "./results/plots/TC_TME_analysis/")
