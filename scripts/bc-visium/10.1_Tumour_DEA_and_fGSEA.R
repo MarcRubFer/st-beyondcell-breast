@@ -167,3 +167,93 @@ ggsave(filename = "hallmarks_bubbleheatmap.png",
        plot = hallmarks.plot,
        path = out.dir.plots)
 
+##############################################################################
+# fGSEA for myc
+results.gsea.myc <- lapply(X = seq_along(num.tcs), FUN = function(tc) {
+  vector.tc <- list.vector.gsea[[tc]]
+  fgseaRes <- fgsea(pathways = myc.v1.founders, 
+                    stats    = vector.tc,
+                    minSize  = 15,
+                    maxSize  = 500,
+                    nPermSimple = 100000)
+  fgseaRes <- as.data.frame(fgseaRes)
+  fgseaRes$TC <- tc
+  return(fgseaRes)
+})
+
+# Process fgsea results for Bubbleheatmap
+gsea.table.myc <- results.gsea.myc %>%
+  bind_rows() %>%
+  rename(NAME = pathway,
+         FDR.q.val = padj, COMPARISON = TC)
+
+chosen.fun.sigs.myc <- gsea.table.myc %>%
+  slice_max(order_by = NES, n = 25, by = COMPARISON) %>%
+  pull(NAME) %>%
+  unique()
+
+table.bub.heatmap.myc <- gsea.table.myc %>%
+  filter(!is.na(NES) & NAME %in% chosen.fun.sigs.myc) %>%
+  mutate(COMPARISON = COMPARISON + 2,
+         COMPARISON = factor(COMPARISON),
+         COMPARISON = paste0("TC-",COMPARISON))
+
+# BubbleHeatmap plotting
+myc.plot <- ggbubbleHeatmap(df = table.bub.heatmap.myc,
+                                  cluster.cols = F, 
+                                  n.perm = 100000)
+myc.plot[[2]] <- myc.plot[[2]] +
+  theme(axis.text.y = element_text(size = 5,
+                                   face = "bold"),
+        axis.text.x = element_text(angle = 0,
+                                   hjust = 0.5,
+                                   vjust = 0,
+                                   face = "bold",
+                                   size = 10))
+myc.plot
+
+##############################################################################
+tgf.beta.gmt <- readGMT(x="./data/gmts/HALLMARK_TGF_BETA_SIGNALING_FOUNDERS.v2023.2.Hs.gmt")
+# fGSEA for myc
+results.gsea.tgf.beta <- lapply(X = seq_along(num.tcs), FUN = function(tc) {
+  vector.tc <- list.vector.gsea[[tc]]
+  fgseaRes <- fgsea(pathways = tgf.beta.gmt, 
+                    stats    = vector.tc,
+                    minSize  = 15,
+                    maxSize  = 500,
+                    nPermSimple = 100000)
+  fgseaRes <- as.data.frame(fgseaRes)
+  fgseaRes$TC <- tc
+  return(fgseaRes)
+})
+
+# Process fgsea results for Bubbleheatmap
+gsea.table.tgf.beta <- results.gsea.tgf.beta %>%
+  bind_rows() %>%
+  rename(NAME = pathway,
+         FDR.q.val = padj, COMPARISON = TC)
+
+chosen.fun.sigs.tgf.beta <- gsea.table.tgf.beta %>%
+  slice_max(order_by = NES, n = 50, by = COMPARISON) %>%
+  pull(NAME) %>%
+  unique()
+
+table.bub.heatmap.tgf.beta <- gsea.table.tgf.beta %>%
+  filter(!is.na(NES) & NAME %in% chosen.fun.sigs.tgf.beta) %>%
+  mutate(COMPARISON = COMPARISON + 2,
+         COMPARISON = factor(COMPARISON),
+         COMPARISON = paste0("TC-",COMPARISON))
+
+# BubbleHeatmap plotting
+tgf.beta.plot <- ggbubbleHeatmap(df = table.bub.heatmap.tgf.beta,
+                            cluster.cols = F, 
+                            n.perm = 100000)
+tgf.beta.plot[[2]] <- tgf.beta.plot[[2]] +
+  theme(axis.text.y = element_text(size = 5,
+                                   face = "bold"),
+        axis.text.x = element_text(angle = 0,
+                                   hjust = 0.5,
+                                   vjust = 0,
+                                   face = "bold",
+                                   size = 10))
+tgf.beta.plot

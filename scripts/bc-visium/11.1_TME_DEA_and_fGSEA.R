@@ -22,6 +22,7 @@ dir.create(path = out.dir, recursive = TRUE)
 seurat.TME <- readRDS(file = "./results/analysis/seuratobj.TME-TCs.rds")
 # Load gmts
 reactome.gmt <- readGMT(x= "./data/gmts/c2.cp.reactome.v2023.2.Hs.symbols.gmt")
+hallmarks.extended.gmt <- readGMT(x = "./data/gmts/hallmarks.schuetz.brcaness.tis.gmt")
 
 
 # Change to Spatial assay and establish TCs as idents
@@ -141,3 +142,58 @@ ggsave(filename = "TME_barplot_fGSEA_pathways_annotated.png",
 ggsave(filename = "TME_barplot_fGSEA_metapathways.png",
        plot = barplot3,
        path = "./results/plots/TC_TME_analysis/")
+
+
+###############################################################################
+log2fc.vector.ordered <- sort(log2fc.vector, decreasing = T)
+## Calculate GSEA results
+fgseaRes.hallmarks <- fgsea(pathways = hallmarks.extended.gmt, 
+                  stats    = log2fc.vector.ordered,
+                  minSize  = 15,
+                  maxSize  = 500,
+                  nPermSimple = 1000)
+
+## TODO: create a table which include leadingedge list. At the moment, we save 
+## fgseaRes without this column
+
+fgseaRes.hallmarks.toexport <- fgseaRes.hallmarks %>%
+  select(-leadingEdge)
+
+write.table(x = fgseaRes.hallmarks.toexport,
+            file = "./results/tables/TC1_TC2_fGSEA_results_HALLMARKS.tsv",
+            sep = "\t", 
+            col.names = TRUE, row.names = FALSE, quote = FALSE)
+
+
+fgseaRes.hallmarks <- read_tsv("./results/tables/TC1_TC2_fGSEA_results_HALLMARKS.tsv")
+
+fgseaRes.hallmarks <- as.data.frame(fgseaRes.hallmarks)
+
+barplot.hallmarks.data <- fgseaRes.hallmarks %>%
+  filter(padj < 0.05) %>%
+  mutate(UP_DOWN = case_when(NES > 0 ~ "UP",
+                             TRUE ~ "DOWN")) %>%
+  group_by(UP_DOWN) %>%
+  arrange(desc(NES)) %>%
+  slice_max(NES, n = 50) 
+
+barplot.hallmarks <- barplot.hallmarks.data %>%
+  ggplot(aes(y = reorder(as.factor(pathway), NES), x = NES)) +
+  geom_bar(aes(fill = "firebrick2"), stat = "identity") 
+
+myc.v1.founders <- readGMT(x = "./data/gmts/HALLMARK_MYC_TARGETS_V1_FOUNDERS.v2023.2.Hs.gmt")
+fgseaRes.myc.founders <- fgsea(pathways = myc.v1.founders, 
+                            stats    = log2fc.vector,
+                            minSize  = 15,
+                            maxSize  = 500,
+                            nPermSimple = 1000)
+data.myc.founders <- fgseaRes.myc.founders %>%
+  filter(padj < 0.05) %>%
+  mutate(UP_DOWN = case_when(NES > 0 ~ "UP",
+                             TRUE ~ "DOWN")) %>%
+  group_by(UP_DOWN) %>%
+  arrange(desc(NES)) %>%
+  slice_max(NES, n = 50) 
+barplot.myc <- data.myc.founders %>%
+  ggplot(aes(y = reorder(as.factor(pathway), NES), x = NES)) +
+  geom_bar(aes(fill = "firebrick2"), stat = "identity")

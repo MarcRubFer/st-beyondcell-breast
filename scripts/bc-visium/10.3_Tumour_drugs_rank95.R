@@ -92,14 +92,14 @@ drugs.matrix.Tumour <- drugs.matrix.Tumour[,col.order.spots.tumour]
 
 # Collapsed moas for breast-SSc signature 
 ## Import manual collapsed moas TME drugs
-collapsed.moas.TME <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.TME.tsv")
-collapsed.moas.TME <- as.data.frame(collapsed.moas.TME)
-rownames(collapsed.moas.TME) <- collapsed.moas.TME$top.diff
+collapsed.moas.Tumour <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.tumour.tsv")
+collapsed.moas.Tumour <- as.data.frame(collapsed.moas.Tumour)
+rownames(collapsed.moas.Tumour) <- collapsed.moas.Tumour$top.diff
 
-names.moas.TME <- levels(factor(collapsed.moas.TME$collapsed.MoAs))
-length.moas.TME <- length(names.moas.TME)
+names.moas.Tumour <- levels(factor(collapsed.moas.Tumour$collapsed.MoAs))
+length.moas.Tumour <- length(names.moas.Tumour)
 
-cols.drugs.TME <- c("#cd9046",
+cols.drugs.Tumour <- c("#cd9046",
                     "#9d5ccc",
                     "#5eb04d",
                     "#c84eb0",
@@ -112,7 +112,7 @@ cols.drugs.TME <- c("#cd9046",
                     "#c177ae",
                     "#6b9ad5",
                     "#b96260")
-names(cols.drugs.TME) <- names.moas.TME
+names(cols.drugs.Tumour) <- names.moas.Tumour
 
 
 ## Calculate maximum and minimum for matrix
@@ -181,12 +181,12 @@ heatmap.drugs.Tumour.cancerepith <- Heatmap(
                                      col = list("TCs" = TC.colors,
                                                 "Cell type" = colors.categories,
                                                 "Cancer Epith" = Var)),
-  #right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
-  #                                 col = list(MoA = cols.drugs.TME)),
+  right_annotation = rowAnnotation(MoA = collapsed.moas.Tumour$collapsed.MoAs,
+                                   col = list(MoA = cols.drugs.Tumour)),
   show_column_names = FALSE,
   column_split = col.order.Tumour2$TCs_res.0.3,
   row_names_gp = gpar(fontsize = 6),
-  #row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
+  row_labels = toupper(collapsed.moas.Tumour$preferred.drug.names),
   cluster_rows = T,
   row_split = 6,
   col = colorRamp2(c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max), c("blue", "white", "red")),
