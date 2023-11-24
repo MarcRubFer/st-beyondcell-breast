@@ -42,6 +42,8 @@ bc.TCs.TME <- readRDS(file = "./results/analysis/beyondcell.TME-TCs.rds")
 # Drugs ranking
 bc.ranked.TME <- bcRanks(bc.TCs.TME, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
 
+saveRDS(object = bc.ranked.TME, file = "./results/analysis/bc_ranked_TME.rds")
+
 # Plots 4 squares
 bc4squares.TME <- bc4Squares(bc.ranked.TME, idents = "TCs_res.0.3")
 bc4squares.TME.plots <- wrap_plots(bc4squares.TME)

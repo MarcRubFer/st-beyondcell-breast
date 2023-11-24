@@ -27,6 +27,9 @@ gs.breast <- GenerateGenesets(x = "./data/gmts/drug_signatures_classic_nodup.gmt
 # Drugs ranking
 ## Establish cutoff  of 5% (more restrictive)
 bc.ranked <- bcRanks(bc.recomputed, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
+
+saveRDS(object = bc.ranked, file = "./results/analysis/bc_ranked_all.rds")
+
 bc.4squares <- bc4Squares(bc.ranked, idents = "TCs_res.0.3")
 bc4squares.plots <- wrap_plots(bc.4squares)
 

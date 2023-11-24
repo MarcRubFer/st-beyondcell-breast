@@ -42,6 +42,8 @@ bc.TCs.Tumour <- readRDS(file = "./results/analysis/beyondcell.Tumour-TCs.rds")
 # Drugs ranking
 bc.ranked.Tumour <- bcRanks(bc.TCs.Tumour, idents = "TCs_res.0.3",  resm.cutoff = c(0.05,0.95))
 
+saveRDS(object = bc.ranked.Tumour, file = "./results/analysis/bc_ranked_Tumour.rds")
+
 # Plots 4 squares
 bc4squares.Tumour <- bc4Squares(bc.ranked.Tumour, idents = "TCs_res.0.3")
 bc4squares.Tumour.plots <- wrap_plots(bc4squares.Tumour)
