@@ -2,7 +2,6 @@ rm(list = ls())
 
 library("beyondcell")
 library("Seurat")
-library("clustree")
 library("tidyverse")
 library("tidygraph")
 library("patchwork")
@@ -79,6 +78,39 @@ dim(bc.ranked.Tumour@normalized)
 drugs.matrix.Tumour <- bc.ranked.Tumour@normalized[top.diff.Tumour,]
 dim(drugs.matrix.Tumour)
 
+# Update: for maximize differences in heatmap we will use scaled data. But 
+# we need to transform data to mantein switch point info (SP)
+dim(bc.ranked.Tumour@scaled)
+length(bc.ranked.Tumour@switch.point)
+
+drugs.matrix.Tumour <- bc.ranked.Tumour@scaled[top.diff.Tumour,]
+sp <- bc.ranked.Tumour@switch.point[top.diff.Tumour]
+
+drugs.matrix.Tumour <- apply(X = drugs.matrix.Tumour, MARGIN = 2, FUN = function(x) {x-sp})
+
+library(scales)
+drugs.matrix.Tumour <- t(apply(X = drugs.matrix.Tumour, MARGIN = 1, FUN = function(x){
+  if (all(x > 0)){
+    scaled.row <- scales::rescale(x, to = c(0,1))
+  } else if (all(x < 0)) {
+    scaled.row <- scales::rescale(x, to = c(-1,0))
+  } else {
+    max.positive <- max(x[x > 0])
+    min.negative <- min(x[x < 0])
+    row.positive <- x[x > 0]
+    row.negative <- x[x < 0]
+    
+    row.positive.scaled <- rescale(row.positive, to = c(0, 1), from = c(min(row.positive), max.positive))
+    row.negative.scaled <- rescale(row.negative, to = c(-1, 0), from = c(max(row.negative), min.negative))
+    
+    scaled.row <- x
+    scaled.row[x > 0] <- row.positive.scaled
+    scaled.row[x < 0] <- row.negative.scaled
+  } 
+  return(scaled.row)
+}))
+drugs.matrix.Tumour <- t(apply(drugs.matrix.Tumour, 1, function(x){round(x,2)}))
+
 col.order.Tumour <- bc.ranked.Tumour@meta.data %>%
   select(TCs_res.0.3, spot.collapse, Cancer.Epithelial) %>%
   arrange(TCs_res.0.3, spot.collapse,Cancer.Epithelial)
@@ -129,20 +161,29 @@ heatmap.drugs.Tumour <- Heatmap(
                                      "Cell type" = col.order.Tumour$spot.collapse,
                                      col = list("TCs" = TC.colors,
                                                 "Cell type" = colors.categories)),
-  #right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
-  #                                 col = list(MoA = cols.drugs.TME)),
+  right_annotation = rowAnnotation(MoA = collapsed.moas.Tumour$collapsed.MoAs,
+                                   TC3.sens = cp.collapsed.moas$TC3.sensitivity,
+                                   TC4.sens = cp.collapsed.moas$TC4.sensitivity,
+                                   TC5.sens = cp.collapsed.moas$TC5.sensitivity,
+                                   TC6.sens = cp.collapsed.moas$TC6.sensitivity,
+                                   col = list(MoA = cols.drugs.Tumour,
+                                              TC3.sens = col.sensitivity,
+                                              TC4.sens = col.sensitivity,
+                                              TC5.sens = col.sensitivity,
+                                              TC6.sens = col.sensitivity)),
   show_column_names = FALSE,
   column_split = col.order.Tumour$TCs_res.0.3,
   row_names_gp = gpar(fontsize = 6),
-  #row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
+  row_labels = toupper(collapsed.moas.Tumour$preferred.drug.names),
   cluster_rows = T,
   row_split = 6,
   col = colorRamp2(c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max))
 )      
 heatmap.drugs.Tumour
-heatmap.drugs.TME <- draw(heatmap.drugs.TME, merge_legend = TRUE)
-heatmap.drugs.TME
+heatmap.drugs.Tumour <- draw(heatmap.drugs.Tumour, merge_legend = TRUE)
+heatmap.drugs.Tumour
+
 png(filename = "./results/plots/TC_TME_analysis/heatmap_TME_TCs.png",
     width = 48,
     height = 24,
@@ -163,7 +204,7 @@ col.order.spots.tumour2 <- col.order.Tumour2  %>%
   rownames_to_column("spots") %>%
   pull(spots)
 
-drugs.matrix.Tumour2 <- drugs.matrix.Tumour2[,col.order.spots.tumour2]
+drugs.matrix.Tumour2 <- drugs.matrix.Tumour[,col.order.spots.tumour2]
 
 # Scale color for cancer epithelial
 n = length(col.order.Tumour2$Cancer.Epithelial)
@@ -184,7 +225,15 @@ heatmap.drugs.Tumour.cancerepith <- Heatmap(
                                                 "Cell type" = colors.categories,
                                                 "Cancer Epith" = Var)),
   right_annotation = rowAnnotation(MoA = collapsed.moas.Tumour$collapsed.MoAs,
-                                   col = list(MoA = cols.drugs.Tumour)),
+                                   TC3.sens = cp.collapsed.moas$TC3.sensitivity,
+                                   TC4.sens = cp.collapsed.moas$TC4.sensitivity,
+                                   TC5.sens = cp.collapsed.moas$TC5.sensitivity,
+                                   TC6.sens = cp.collapsed.moas$TC6.sensitivity,
+                                   col = list(MoA = cols.drugs.Tumour,
+                                              TC3.sens = col.sensitivity,
+                                              TC4.sens = col.sensitivity,
+                                              TC5.sens = col.sensitivity,
+                                              TC6.sens = col.sensitivity)),
   show_column_names = FALSE,
   column_split = col.order.Tumour2$TCs_res.0.3,
   row_names_gp = gpar(fontsize = 6),
