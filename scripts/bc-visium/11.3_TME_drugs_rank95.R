@@ -2,7 +2,6 @@ rm(list = ls())
 
 library("beyondcell")
 library("Seurat")
-library("clustree")
 library("tidyverse")
 library("tidygraph")
 library("patchwork")
@@ -79,6 +78,39 @@ dim(bc.ranked.TME@normalized)
 drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
 dim(drugs.matrix.TME)
 
+# Update: for maximize differences in heatmap we will use scaled data. But 
+# we need to transform data to mantein switch point info (SP)
+dim(bc.ranked.TME@scaled)
+length(bc.ranked.TME@switch.point)
+
+drugs.matrix.TME <- bc.ranked.TME@scaled[top.diff.TME,]
+sp <- bc.ranked.TME@switch.point[top.diff.TME]
+
+drugs.matrix.TME <- apply(X = drugs.matrix.TME, MARGIN = 2, FUN = function(x) {x-sp})
+
+library(scales)
+drugs.matrix.TME <- t(apply(X = drugs.matrix.TME, MARGIN = 1, FUN = function(x){
+  if (all(x > 0)){
+    scaled.row <- scales::rescale(x, to = c(0,1))
+  } else if (all(x < 0)) {
+    scaled.row <- scales::rescale(x, to = c(-1,0))
+  } else {
+    max.positive <- max(x[x > 0])
+    min.negative <- min(x[x < 0])
+    row.positive <- x[x > 0]
+    row.negative <- x[x < 0]
+    
+    row.positive.scaled <- rescale(row.positive, to = c(0, 1), from = c(min(row.positive), max.positive))
+    row.negative.scaled <- rescale(row.negative, to = c(-1, 0), from = c(max(row.negative), min.negative))
+    
+    scaled.row <- x
+    scaled.row[x > 0] <- row.positive.scaled
+    scaled.row[x < 0] <- row.negative.scaled
+  } 
+  return(scaled.row)
+}))
+drugs.matrix.TME <- t(apply(drugs.matrix.TME, 1, function(x){round(x,2)}))
+
 col.order.TME <- bc.ranked.TME@meta.data %>%
   select(TCs_res.0.3, spot.collapse, Cancer.Epithelial) %>%
   arrange(TCs_res.0.3, spot.collapse,Cancer.Epithelial)
@@ -126,6 +158,34 @@ cols.drugs.TME <- c("#cd9046",
                     "#b96260")
 names(cols.drugs.TME) <- names.moas.TME
 
+#High-LowSensitibity Differential by TCs
+top.diff.TME.df <- as.data.frame(bc.ranked.TME@ranks) %>%
+  select(starts_with(match = "TCs_res.0.3.group.")) %>%
+  rownames_to_column("signature") %>%
+  pivot_longer(cols = starts_with("TCs_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
+  filter(group != is.na(group),
+         grepl("Differential", group)) %>%
+  mutate(cluster = gsub(pattern = "TCs_res.0.3.group.TC.", replacement = "", x = cluster),
+         group = gsub(pattern = "TOP-Differential-", replacement = "", x = group))
+
+TC1.sensitivity <- top.diff.TME.df%>%
+  filter(cluster == 1) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC1.sensitivity = group,
+         top.diff = signature)
+TC2.sensitivity <- top.diff.TME.df %>%
+  filter(cluster == 2) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC2.sensitivity = group,
+         top.diff = signature)
+
+collapsed.moas.TME <- collapsed.moas.TME %>%
+  left_join(TC1.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC2.sensitivity,by = join_by(top.diff)) 
+
+head(collapsed.moas.TME)
+col.sensitivity <- c("HighSensitivity" = "yellow",
+                     "LowSensitivity" = "purple")
 
 ## Calculate maximum and minimum for matrix
 drugs.matrix.TME.max <- max(apply(drugs.matrix.TME, 1, function(row) max(row)))
@@ -140,7 +200,11 @@ heatmap.drugs.TME <- Heatmap(
                                      col = list("TCs" = TC.colors[1:2],
                                                 "Cell type" = colors.categories)),
   right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
-                                   col = list(MoA = cols.drugs.TME)),
+                                   TC1.sens = collapsed.moas.Tumour$TC1.sensitivity,
+                                   TC4.sens = collapsed.moas.Tumour$TC2.sensitivity,
+                                   col = list(MoA = cols.drugs.TME,
+                                              TC1.sens = col.sensitivity,
+                                              TC2.sens = col.sensitivity)),
   show_column_names = FALSE,
   column_split = col.order.TME$TCs_res.0.3,
   row_names_gp = gpar(fontsize = 6),
@@ -164,9 +228,10 @@ dev.off()
 # HEatmap including Cancer Epithelial percentage
 
 # col.order without spot.collapse
-drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
+#drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
 col.order.TME2 <- bc.ranked.TME@meta.data %>%
-  select(TCs_res.0.3, Cancer.Epithelial,spot.collapse) %>%
+  select(TCs_res.0.3, Cancer.Epithelial, B.cells, T.cells, spot.collapse) %>%
+  mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
 col.order.spots.tme2 <- col.order.TME2  %>%
@@ -176,31 +241,58 @@ col.order.spots.tme2 <- col.order.TME2  %>%
 drugs.matrix.TME2 <- drugs.matrix.TME[,col.order.spots.tme2]
 
 # Scale color for cancer epithelial
-n = length(col.order.TME2$Cancer.Epithelial)
-min_v = round(min(col.order.TME2$Cancer.Epithelial), 2)
-max_v = round(max(col.order.TME2$Cancer.Epithelial), 2)
-Var = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
+n.cancer = length(col.order.TME2$Cancer.Epithelial)
+min_cancer = round(min(col.order.TME2$Cancer.Epithelial), 2)
+max_cancer = round(max(col.order.TME2$Cancer.Epithelial), 2)
+scale.cancer = circlize::colorRamp2(seq(min_cancer, max_cancer, length = n.cancer), hcl.colors(n,"viridis"))
+
+# Scale color for Lymphoid
+n.lymphoid = length(col.order.TME2$Lymphoid)
+min_lymphoid = round(min(col.order.TME2$Lymphoid), 2)
+max_lymphoid = round(max(col.order.TME2$Lymphoid), 2)
+scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n,"viridis"))
+
+# Scale color for B cells
+n.bcells = length(col.order.TME2$B.cells)
+min_bcells = round(min(col.order.TME2$B.cells), 2)
+max_bcells = round(max(col.order.TME2$B.cells), 2)
+scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n,"viridis"))
+
+# Scale color for T cells
+n.tcells = length(col.order.TME2$T.cells)
+min_tcells = round(min(col.order.TME2$T.cells), 2)
+max_tcells = round(max(col.order.TME2$T.cells), 2)
+scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n,"viridis"))
 
 # Draw Heatmap
 heatmap.drugs.TME.cancerepith <- Heatmap(
-  #drugs.matrix.TME,
   drugs.matrix.TME2,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order.TME2$TCs_res.0.3,
                                      "Cancer Epith" = col.order.TME2$Cancer.Epithelial,
+                                     "Lymphoid" = col.order.TME2$Lymphoid,
+                                     "B cells" = col.order.TME2$B.cells,
+                                     "T cells" = col.order.TME2$T.cells,
                                      "Cell type" = col.order.TME2$spot.collapse,
                                      col = list("TCs" = TC.colors[1:2],
                                                 "Cell type" = colors.categories,
-                                                "Cancer Epith" = Var)),
-  right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
-                                   col = list(MoA = cols.drugs.TME)),
+                                                "Cancer Epith" = scale.cancer,
+                                                "Lymphoid" = scale.lymphoid,
+                                                "B cells" = scale.bcells,
+                                                "T cells" = scale.tcells)),
+  right_annotation = rowAnnotation(TC1.sens = collapsed.moas.TME$TC1.sensitivity,
+                                   TC2.sens = collapsed.moas.TME$TC2.sensitivity,
+                                   MoA = collapsed.moas.TME$collapsed.MoAs,
+                                   col = list(MoA = cols.drugs.TME,
+                                              TC1.sens = col.sensitivity,
+                                              TC2.sens = col.sensitivity)),
   show_column_names = FALSE,
   column_split = col.order.TME2$TCs_res.0.3,
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
   cluster_rows = T,
-  row_split = 6,
+  row_km =  2,
   col = colorRamp2(c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
 )      
