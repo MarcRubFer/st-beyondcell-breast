@@ -244,25 +244,25 @@ drugs.matrix.TME2 <- drugs.matrix.TME[,col.order.spots.tme2]
 n.cancer = length(col.order.TME2$Cancer.Epithelial)
 min_cancer = round(min(col.order.TME2$Cancer.Epithelial), 2)
 max_cancer = round(max(col.order.TME2$Cancer.Epithelial), 2)
-scale.cancer = circlize::colorRamp2(seq(min_cancer, max_cancer, length = n.cancer), hcl.colors(n,"viridis"))
+scale.cancer = circlize::colorRamp2(seq(min_cancer, max_cancer, length = n.cancer), hcl.colors(n.cancer,"viridis"))
 
 # Scale color for Lymphoid
 n.lymphoid = length(col.order.TME2$Lymphoid)
 min_lymphoid = round(min(col.order.TME2$Lymphoid), 2)
 max_lymphoid = round(max(col.order.TME2$Lymphoid), 2)
-scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n,"viridis"))
+scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
 
 # Scale color for B cells
 n.bcells = length(col.order.TME2$B.cells)
 min_bcells = round(min(col.order.TME2$B.cells), 2)
 max_bcells = round(max(col.order.TME2$B.cells), 2)
-scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n,"viridis"))
+scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
 
 # Scale color for T cells
 n.tcells = length(col.order.TME2$T.cells)
 min_tcells = round(min(col.order.TME2$T.cells), 2)
 max_tcells = round(max(col.order.TME2$T.cells), 2)
-scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n,"viridis"))
+scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
 
 # Draw Heatmap
 heatmap.drugs.TME.cancerepith <- Heatmap(
