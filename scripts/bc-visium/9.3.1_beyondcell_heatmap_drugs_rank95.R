@@ -152,6 +152,59 @@ col.moas <- c("#db4470",
               "#df936d")
 names(col.moas) <- names.moas
 
+# High-Low sensitivity top diff drugs
+top.diff.df <- as.data.frame(bc.ranked@ranks) %>%
+  select(starts_with(match = "TCs_res.0.3.group.")) %>%
+  rownames_to_column("signature") %>%
+  pivot_longer(cols = starts_with("TCs_res.0.3.group."), names_to = "cluster", values_to = "group") %>%
+  filter(group != is.na(group),
+         grepl("Differential", group)) %>%
+  mutate(cluster = gsub(pattern = "TCs_res.0.3.group.TC.", replacement = "", x = cluster),
+         group = gsub(pattern = "TOP-Differential-", replacement = "", x = group))
+
+# TODO: Generate a loop (lapply or similar) for this data extraction
+TC1.sensitivity <- top.diff.df %>%
+  filter(cluster == 1) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC1.sensitivity = group,
+         top.diff = signature)
+TC2.sensitivity <- top.diff.df %>%
+  filter(cluster == 2) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC2.sensitivity = group,
+         top.diff = signature)
+TC3.sensitivity <- top.diff.df %>%
+  filter(cluster == 3) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC3.sensitivity = group,
+         top.diff = signature)
+TC4.sensitivity <- top.diff.df %>%
+  filter(cluster == 4) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC4.sensitivity = group,
+         top.diff = signature)
+TC5.sensitivity <- top.diff.df %>%
+  filter(cluster == 5) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC5.sensitivity = group,
+         top.diff = signature)
+TC6.sensitivity <- top.diff.df %>%
+  filter(cluster == 6) %>%
+  mutate(cluster = NULL) %>%
+  rename(TC6.sensitivity = group,
+         top.diff = signature)
+
+collapsed.moas <- collapsed.moas %>%
+  left_join(TC1.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC2.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC3.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC4.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC5.sensitivity, by = join_by(top.diff)) %>%
+  left_join(TC6.sensitivity, by = join_by(top.diff))
+
+head(collapsed.moas)
+col.sensitivity <- c("HighSensitivity" = "yellow",
+                     "LowSensitivity" = "purple")
 #Colors for cell types categories
 colors.categories <- toupper(c(#"#4fafe3",
   "MYELOID" ="#be7adc", #violet
@@ -182,8 +235,20 @@ heatmap.drugs <- Heatmap(
                                      "Cell type" = col.order$spot.collapse,
                                      col = list("TCs" = TC.colors,
                                                 "Cell type" = colors.categories)),
-  right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
-                                  col = list(MoA = col.moas)),
+  right_annotation = rowAnnotation(TC1.sens = collapsed.moas$TC1.sensitivity,
+                                   TC2.sens = collapsed.moas$TC2.sensitivity,
+                                   TC3.sens = collapsed.moas$TC3.sensitivity,
+                                   TC4.sens = collapsed.moas$TC4.sensitivity,
+                                   TC5.sens = collapsed.moas$TC5.sensitivity,
+                                   TC6.sens = collapsed.moas$TC6.sensitivity,
+                                   MoA = collapsed.moas$collapsed.MoAs,
+                                   col = list(TC1.sens = col.sensitivity,
+                                              TC2.sens = col.sensitivity,
+                                              TC3.sens = col.sensitivity,
+                                              TC4.sens = col.sensitivity,
+                                              TC5.sens = col.sensitivity,
+                                              TC6.sens = col.sensitivity,
+                                              MoA = col.moas)),
   #left_annotation = rowAnnotation(labels = c(1:15)),
   #row_dend_reorder = TRUE,
   show_column_names = FALSE,
@@ -215,6 +280,7 @@ dev.off()
 
 col.order2 <- bc.ranked@meta.data %>%
   select(TCs_res.0.3, Cancer.Epithelial,B.cells,T.cells,spot.collapse) %>%
+  mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
 col.order.spots2 <- col.order2  %>%
@@ -223,29 +289,78 @@ col.order.spots2 <- col.order2  %>%
 
 drugs.matrix2 <- drugs.matrix[,col.order.spots2]
 
+# Scale color for cancer epithelial
+n.cancer = length(col.order2$Cancer.Epithelial)
+min_cancer = round(min(col.order2$Cancer.Epithelial), 2)
+max_cancer = round(max(col.order2$Cancer.Epithelial), 2)
+scale.cancer = circlize::colorRamp2(seq(min_cancer, max_cancer, length = n.cancer), hcl.colors(n.cancer,"viridis"))
+
+# Scale color for Lymphoid
+n.lymphoid = length(col.order2$Lymphoid)
+min_lymphoid = round(min(col.order2$Lymphoid), 2)
+max_lymphoid = round(max(col.order2$Lymphoid), 2)
+scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
+
+# Scale color for B cells
+n.bcells = length(col.order2$B.cells)
+min_bcells = round(min(col.order2$B.cells), 2)
+max_bcells = round(max(col.order2$B.cells), 2)
+scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
+
+# Scale color for T cells
+n.tcells = length(col.order2$T.cells)
+min_tcells = round(min(col.order2$T.cells), 2)
+max_tcells = round(max(col.order2$T.cells), 2)
+scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
+
 heatmap.drugs.cancer <- Heatmap(
   drugs.matrix2,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order2$TCs_res.0.3,
+                                     "Cancer Epithelial" = col.order2$Cancer.Epithelial,
+                                     "Lymphoid" = col.order2$Lymphoid,
+                                     "B cells" = col.order2$B.cells,
+                                     "T cells" = col.order2$T.cells,
                                      "Cell type" = col.order2$spot.collapse,
                                      col = list("TCs" = TC.colors,
+                                                "Cancer Epithelial" = scale.cancer,
+                                                "Lymphoid" = scale.lymphoid,
+                                                "B cells" = scale.bcells,
+                                                "T cells" = scale.tcells,
                                                 "Cell type" = colors.categories)),
-  right_annotation = rowAnnotation(MoA = collapsed.moas$collapsed.MoAs,
-                                   col = list(MoA = col.moas)),
-  #left_annotation = rowAnnotation(labels = c(1:15)),
-  #row_dend_reorder = TRUE,
   show_column_names = FALSE,
   column_split = col.order2$TCs_res.0.3,
-  #column_order = col.order,
+  right_annotation = rowAnnotation(TC1.sens = collapsed.moas$TC1.sensitivity,
+                                   TC2.sens = collapsed.moas$TC2.sensitivity,
+                                   TC3.sens = collapsed.moas$TC3.sensitivity,
+                                   TC4.sens = collapsed.moas$TC4.sensitivity,
+                                   TC5.sens = collapsed.moas$TC5.sensitivity,
+                                   TC6.sens = collapsed.moas$TC6.sensitivity,
+                                   MoA = collapsed.moas$collapsed.MoAs,
+                                   col = list(TC1.sens = col.sensitivity,
+                                              TC2.sens = col.sensitivity,
+                                              TC3.sens = col.sensitivity,
+                                              TC4.sens = col.sensitivity,
+                                              TC5.sens = col.sensitivity,
+                                              TC6.sens = col.sensitivity,
+                                              MoA = col.moas)),
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
-  #row_km = 16,
-  #row_order = 1:16,
-  row_split = 16,
-  #show_row_dend = F,
-  #row_title = NULL,
-  #col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
-  #heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
+  #row_km = ,
+  row_split = 6,
+  col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
+  heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
 )      
 heatmap.drugs.cancer
+heatmap.drugs.cancer <- draw(heatmap.drugs.cancer, merge_legend = TRUE)
+heatmap.drugs.cancer
+
+dir.create(path = "./results/plots/Beyondcell_oct23_DrugRank")
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Heatmap_DrugRank95.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(heatmap.drugs.cancer)
+dev.off()
