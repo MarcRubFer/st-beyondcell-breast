@@ -239,7 +239,8 @@ dev.off()
 # col.order without spot.collapse
 #drugs.matrix.Tumour2 <- bc.ranked.Tumour@normalized[top.diff.Tumour,]
 col.order.Tumour2 <- bc.ranked.Tumour@meta.data %>%
-  select(TCs_res.0.3, Cancer.Epithelial,B.cells,spot.collapse) %>%
+  select(TCs_res.0.3, Cancer.Epithelial,B.cells,T.cells,spot.collapse) %>%
+  mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
 col.order.spots.tumour2 <- col.order.Tumour2  %>%
@@ -254,31 +255,46 @@ min_v = round(min(col.order.Tumour2$Cancer.Epithelial), 2)
 max_v = round(max(col.order.Tumour2$Cancer.Epithelial), 2)
 Var = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
 
+# Scale color for Lymphoid
+n.lymphoid = length(col.order.Tumour2$Lymphoid)
+min_lymphoid = round(min(col.order.Tumour2$Lymphoid), 2)
+max_lymphoid = round(max(col.order.Tumour2$Lymphoid), 2)
+scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
+
 # Scale color for B cells
 n.bcells = length(col.order.Tumour2$B.cells)
-min_b = round(min(col.order.Tumour2$B.cells), 2)
-max_b = round(max(col.order.Tumour2$B.cells), 2)
-Var.bcells = circlize::colorRamp2(seq(min_b, max_b, length = n.bcells), hcl.colors(n,"tropic"))
+min_bcells = round(min(col.order.Tumour2$B.cells), 2)
+max_bcells = round(max(col.order.Tumour2$B.cells), 2)
+scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
+
+# Scale color for T cells
+n.tcells = length(col.order.Tumour2$T.cells)
+min_tcells = round(min(col.order.Tumour2$T.cells), 2)
+max_tcells = round(max(col.order.Tumour2$T.cells), 2)
+scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
 
 # Draw Heatmap
 heatmap.drugs.Tumour.cancerepith <- Heatmap(
-  #drugs.matrix.TME,
   drugs.matrix.Tumour2,
   name = "bcScore",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order.Tumour2$TCs_res.0.3,
                                      "Cancer Epith" = col.order.Tumour2$Cancer.Epithelial,
+                                     "Lymphoid" = col.order.Tumour2$Lymphoid,
                                      "B cells" = col.order.Tumour2$B.cells,
+                                     "T cells" = col.order.Tumour2$T.cells,
                                      "Cell type" = col.order.Tumour2$spot.collapse,
                                      col = list("TCs" = TC.colors,
-                                                "Cell type" = colors.categories,
-                                                "Cancer Epith" = Var,
-                                                "B cells" = Var.bcells)),
-  right_annotation = rowAnnotation(MoA = collapsed.moas.Tumour$collapsed.MoAs,
-                                   TC3.sens = collapsed.moas.Tumour$TC3.sensitivity,
+                                                "Cancer Epith" = scale.cancer,
+                                                "Lymphoid" = scale.lymphoid,
+                                                "B cells" = scale.bcells,
+                                                "T cells" = scale.tcells,
+                                                "Cell type" = colors.categories)),
+  right_annotation = rowAnnotation(TC3.sens = collapsed.moas.Tumour$TC3.sensitivity,
                                    TC4.sens = collapsed.moas.Tumour$TC4.sensitivity,
                                    TC5.sens = collapsed.moas.Tumour$TC5.sensitivity,
                                    TC6.sens = collapsed.moas.Tumour$TC6.sensitivity,
+                                   MoA = collapsed.moas.Tumour$collapsed.MoAs,
                                    col = list(MoA = cols.drugs.Tumour,
                                               TC3.sens = col.sensitivity,
                                               TC4.sens = col.sensitivity,
