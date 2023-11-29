@@ -181,6 +181,10 @@ barplot.hallmarks <- barplot.hallmarks.data %>%
   ggplot(aes(y = reorder(as.factor(pathway), NES), x = NES)) +
   geom_bar(aes(fill = "firebrick2"), stat = "identity") 
 
+ggsave(filename = "TME_barplot_HALLMARKS_fGSEA_pathways.png",
+       plot = barplot.hallmarks,
+       path = "./results/plots/TC_TME_analysis/")
+
 myc.v1.founders <- readGMT(x = "./data/gmts/HALLMARK_MYC_TARGETS_V1_FOUNDERS.v2023.2.Hs.gmt")
 fgseaRes.myc.founders <- fgsea(pathways = myc.v1.founders, 
                             stats    = log2fc.vector,
