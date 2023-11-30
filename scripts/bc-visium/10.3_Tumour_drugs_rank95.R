@@ -90,22 +90,22 @@ drugs.matrix.Tumour <- apply(X = drugs.matrix.Tumour, MARGIN = 2, FUN = function
 
 library(scales)
 drugs.matrix.Tumour <- t(apply(X = drugs.matrix.Tumour, MARGIN = 1, FUN = function(x){
-  if (all(x > 0)){
+  if (all(x >= 0)){
     scaled.row <- scales::rescale(x, to = c(0,1))
-  } else if (all(x < 0)) {
+  } else if (all(x <= 0)) {
     scaled.row <- scales::rescale(x, to = c(-1,0))
   } else {
     max.positive <- max(x[x > 0])
     min.negative <- min(x[x < 0])
-    row.positive <- x[x > 0]
-    row.negative <- x[x < 0]
+    row.positive <- x[x >= 0]
+    row.negative <- x[x <= 0]
     
     row.positive.scaled <- rescale(row.positive, to = c(0, 1), from = c(min(row.positive), max.positive))
     row.negative.scaled <- rescale(row.negative, to = c(-1, 0), from = c(max(row.negative), min.negative))
     
     scaled.row <- x
-    scaled.row[x > 0] <- row.positive.scaled
-    scaled.row[x < 0] <- row.negative.scaled
+    scaled.row[x >= 0] <- row.positive.scaled
+    scaled.row[x <= 0] <- row.negative.scaled
   } 
   return(scaled.row)
 }))
@@ -253,7 +253,7 @@ drugs.matrix.Tumour2 <- drugs.matrix.Tumour[,col.order.spots.tumour2]
 n = length(col.order.Tumour2$Cancer.Epithelial)
 min_v = round(min(col.order.Tumour2$Cancer.Epithelial), 2)
 max_v = round(max(col.order.Tumour2$Cancer.Epithelial), 2)
-Var = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
+scale.cancer = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
 
 # Scale color for Lymphoid
 n.lymphoid = length(col.order.Tumour2$Lymphoid)
@@ -305,7 +305,7 @@ heatmap.drugs.Tumour.cancerepith <- Heatmap(
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.Tumour$preferred.drug.names),
   cluster_rows = T,
-  row_split = 6,
+  row_split = 4,
   col = colorRamp2(c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max))
 )      

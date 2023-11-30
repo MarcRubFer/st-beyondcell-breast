@@ -313,6 +313,7 @@ min_tcells = round(min(col.order2$T.cells), 2)
 max_tcells = round(max(col.order2$T.cells), 2)
 scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
 
+# Create Heatmap
 heatmap.drugs.cancer <- Heatmap(
   drugs.matrix2,
   name = "bcScore",
@@ -347,8 +348,7 @@ heatmap.drugs.cancer <- Heatmap(
                                               MoA = col.moas)),
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
-  #row_km = 6,
-  row_split = 6,
+  row_split = 5,
   col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
 )      

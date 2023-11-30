@@ -90,22 +90,22 @@ drugs.matrix.TME <- apply(X = drugs.matrix.TME, MARGIN = 2, FUN = function(x) {x
 
 library(scales)
 drugs.matrix.TME <- t(apply(X = drugs.matrix.TME, MARGIN = 1, FUN = function(x){
-  if (all(x > 0)){
+  if (all(x >= 0)){
     scaled.row <- scales::rescale(x, to = c(0,1))
-  } else if (all(x < 0)) {
+  } else if (all(x <= 0)) {
     scaled.row <- scales::rescale(x, to = c(-1,0))
   } else {
     max.positive <- max(x[x > 0])
     min.negative <- min(x[x < 0])
-    row.positive <- x[x > 0]
-    row.negative <- x[x < 0]
+    row.positive <- x[x >= 0]
+    row.negative <- x[x <= 0]
     
     row.positive.scaled <- rescale(row.positive, to = c(0, 1), from = c(min(row.positive), max.positive))
     row.negative.scaled <- rescale(row.negative, to = c(-1, 0), from = c(max(row.negative), min.negative))
     
     scaled.row <- x
-    scaled.row[x > 0] <- row.positive.scaled
-    scaled.row[x < 0] <- row.negative.scaled
+    scaled.row[x >= 0] <- row.positive.scaled
+    scaled.row[x <= 0] <- row.negative.scaled
   } 
   return(scaled.row)
 }))
@@ -232,6 +232,7 @@ dev.off()
 col.order.TME2 <- bc.ranked.TME@meta.data %>%
   select(TCs_res.0.3, Cancer.Epithelial, B.cells, T.cells, spot.collapse) %>%
   mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
+  #arrange(TCs_res.0.3,Lymphoid)
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
 col.order.spots.tme2 <- col.order.TME2  %>%
@@ -292,7 +293,7 @@ heatmap.drugs.TME.cancerepith <- Heatmap(
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
   cluster_rows = T,
-  row_km =  2,
+  row_split =  2,
   col = colorRamp2(c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
 )      
