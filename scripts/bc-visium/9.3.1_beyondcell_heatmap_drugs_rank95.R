@@ -79,22 +79,22 @@ drugs.matrix <- apply(X = drugs.matrix, MARGIN = 2, FUN = function(x) {x-sp})
 
 library(scales)
 drugs.matrix <- t(apply(X = drugs.matrix, MARGIN = 1, FUN = function(x){
-  if (all(x > 0)){
+  if (all(x >= 0)){
     scaled.row <- scales::rescale(x, to = c(0,1))
-  } else if (all(x < 0)) {
+  } else if (all(x <= 0)) {
     scaled.row <- scales::rescale(x, to = c(-1,0))
   } else {
     max.positive <- max(x[x > 0])
     min.negative <- min(x[x < 0])
-    row.positive <- x[x > 0]
-    row.negative <- x[x < 0]
+    row.positive <- x[x >= 0]
+    row.negative <- x[x <= 0]
     
     row.positive.scaled <- rescale(row.positive, to = c(0, 1), from = c(min(row.positive), max.positive))
     row.negative.scaled <- rescale(row.negative, to = c(-1, 0), from = c(max(row.negative), min.negative))
     
     scaled.row <- x
-    scaled.row[x > 0] <- row.positive.scaled
-    scaled.row[x < 0] <- row.negative.scaled
+    scaled.row[x >= 0] <- row.positive.scaled
+    scaled.row[x <= 0] <- row.negative.scaled
   } 
   return(scaled.row)
 }))
@@ -347,7 +347,7 @@ heatmap.drugs.cancer <- Heatmap(
                                               MoA = col.moas)),
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
-  #row_km = ,
+  #row_km = 6,
   row_split = 6,
   col = colorRamp2(c(drugs.min.matrix, 0, drugs.max.matrix), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.min.matrix, 0, drugs.max.matrix))
