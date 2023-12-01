@@ -9,7 +9,7 @@ library("ComplexHeatmap")
 library("circlize")
 library("RColorBrewer")
 
-bc.ranked <- read_rds("./results/analysis/bc_ranked_all.rds")
+bc.ranked <- readRDS("./results/analysis/bc_ranked_all.rds")
 
 top.diff <- as.data.frame(bc.ranked@ranks) %>%
   select(starts_with(match = "TCs_res.0.3.group.")) %>%
@@ -63,7 +63,7 @@ plot.correlation.list <- function(df,drugs,idents,cluster){
   return(plots)
 }
 
-plots.TC3 <- plot.correlation.list(df = distrib.total, drugs = top.diff, idents = "TCs_res.0.3", cluster = "TC-3")
+#plots.TC3 <- plot.correlation.list(df = distrib.total, drugs = top.diff, idents = "TCs_res.0.3", cluster = "TC-3")
 
 TCs <- unique(levels(bc.ranked@meta.data$TCs_res.0.3))
 
@@ -97,7 +97,7 @@ stats.function <- function(drugs,plots.list,cluster){
   return(stats.cluster.df)
 }
 
-stats.TC3 <- stats.function(drugs = top.diff, plots.list = plots.TC3, cluster = "TC-3")
+#stats.TC3 <- stats.function(drugs = top.diff, plots.list = plots.TC3, cluster = "TC-3")
 
 stats.TCs <- lapply(seq_along(TCs), function(TC){
   plots <- plots.TCs[[TC]]
@@ -134,13 +134,29 @@ matrix.cor <- stats.split.merged %>%
   rename_with(.fn = ~gsub(pattern = "estimate.",replacement = "",.x)) %>%
   as.matrix()
 
+# Create annotations for p-values
 
-pvalue.TC1 = stats.TC1.df.split$p.value.TC1
-is_sig = pvalue.TC1 < 0.01
-pch = rep("*", length(pvalue.TC1))
-pch[!is_sig] = NA
-pvalue_col_fun = colorRamp2(c(0, 2, 3), c("gree", "white", "red")) 
+pvalue_col_fun = colorRamp2(c(0, 2, 3), c("white", "white", "yellow")) 
+p.value.df <- stats.split.merged %>%
+  select(all_of(starts_with("p.value")))
 
+# p.values
+pvalue.TC1 = p.value.df$`p.value.TC-1`
+is_sig.TC1 = pvalue.TC1 < 0.01
+pch.TC1 = rep("*", length(pvalue.TC1))
+pch.TC1[!is_sig] = NA
+
+list <- lapply(c(1:6), function(x){
+  p.value <- p.value.df[,x]
+  is_sig = p.value < 0.01
+  pch = rep("*", length(pvalue.TC1))
+  pch[!is_sig] = NA
+  l <- list(p.value = p.value,
+            pch = pch)
+  return(l)
+})
+names(list) <- TCs
+names(list)
 TC.colors <- c("TC-1" = "#00b2d7",
                "TC-2" = "#e5c22f",
                "TC-3" = "#903ca2",
@@ -148,34 +164,66 @@ TC.colors <- c("TC-1" = "#00b2d7",
                "TC-5" = "#ff7b00",
                "TC-6" = "#cb5c42")
 
-ht.TC1 <- Heatmap(
-  matrix = matrix.cor,
-  name = "Corr Cancer-TC1",
-  #row_labels = stats.TC1.df.split$drug,
+# Collapsed moas for breast-SSc signature
+## Import manual collapsed moas drugs
+collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
+collapsed.moas <- as.data.frame(collapsed.moas)
+rownames(collapsed.moas) <- collapsed.moas$top.diff
+
+ht <- Heatmap(
+  matrix = matrix.cor[,1],
+  name = "Correlation",
+  width = unit(5, "cm"),
+  row_labels = toupper(collapsed.moas$preferred.drug.names),
+  row_names_gp = gpar(fontsize = 7),
   cluster_columns = F,
   show_column_names = F,
   cluster_rows = F,
-  #row_labels = toupper(stats.global$preferred.drug.names),
-  top_annotation = HeatmapAnnotation(TC = TCs,
+  top_annotation = HeatmapAnnotation(TC = TCs[1],
                                      col = list("TC" = TC.colors)),
-  #right_annotation = rowAnnotation(
-  #  #pvalue = anno_simple(-log10(pvalue), col = pvalue_col_fun, pch = pch),
-  #  corr = anno_numeric(round(stats.TC1.df.split$estimate.TC1,2), 
-  #                         align_to = "right",
-  #                         bg_gp = gpar(fill = "white", col = "white"),
-  #                         labels_gp = NULL,
-  #                         labels_offset = unit(0, "cm"),
-  #                         width = unit(1.25, "cm")), 
-  #  pvalue = anno_numeric(round((stats.TC1.df.split$p.value.TC1),3), 
-  #                         align_to = "right",
-  #                         bg_gp = gpar(fill = "white", col = "white"),
-  #                         labels_gp = NULL,
-  #                         labels_offset = unit(0, "cm"),
-  #                         width = unit(1.25, "cm")),
-  #  pvalue.sig = anno_simple(-log10(pvalue.TC1), 
-  #                       col = pvalue_col_fun, 
-  #                       pch = pch)),
-  #col = colorRamp2(c(min, 0, max), c("blue", "white", "red")),
-  #heatmap_legend_param = list(at = c(min, 0, max))
+  right_annotation = rowAnnotation(
+    pvalue.TC1 = anno_simple(-log10(list[["TC-1"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list[["TC-1"]][["pch"]])),
+  layer_fun = function(j, i, x, y, width, height, fill) {
+    # since grid.text can also be vectorized
+    grid.text(sprintf("%.1f", pindex(matrix.cor, i, j)), x, y, 
+              gp = gpar(fontsize = 10))
+    }
 )
-ht.TC1
+ht
+ht1 <- ht[, 1] + rowAnnotation(
+  pvalue.TC1 = anno_simple(-log10(list[["TC-1"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-1"]][["pch"]])
+)
+ht2 <- ht[, 2]+ rowAnnotation(
+  pvalue.TC2 = anno_simple(-log10(list[["TC-2"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-2"]][["pch"]])
+  )
+ht3 <- ht[, 3]+ rowAnnotation(
+  pvalue.TC3 = anno_simple(-log10(list[["TC-3"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-3"]][["pch"]])
+)
+ht4 <- ht[, 4]+ rowAnnotation(
+  pvalue.TC4 = anno_simple(-log10(list[["TC-4"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-4"]][["pch"]])
+)
+ht5 <- ht[, 5]+ rowAnnotation(
+  pvalue.TC5 = anno_simple(-log10(list[["TC-5"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-5"]][["pch"]])
+)
+ht6 <- ht[, 6]+ rowAnnotation(
+  pvalue.TC6 = anno_simple(-log10(list[["TC-6"]][["p.value"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list[["TC-6"]][["pch"]])
+)
+
+
+figure.correlation <- ht1 + ht2 + ht3 + ht4 + ht5 + ht6
+figure.correlation
+
