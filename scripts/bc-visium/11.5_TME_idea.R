@@ -64,6 +64,9 @@ categories.up <- ggplot(subset(data.raw, spot %in% TC1.UP.in.DOWN), aes(x = spot
 
 categories.figures <- categories.down | categories.up
 categories.figures
+ggsave(filename = "categories_spots.png",
+       plot = categories.figures,
+       path = "./results/plots/TC_TME_analysis/")
 
 intersect.spots <- intersect(TC1.Down.in.UP,TC1.UP.in.DOWN)
 
@@ -108,5 +111,8 @@ head(cell.type.prop)
 cell.type.prop <- cell.type.prop %>%
   pivot_longer(cols = -spot, names_to = "cell.type", values_to = "proportion")
 head(cell.type.prop)
-ggplot(cell.type.prop, aes(x = cell.type, y = proportion)) +
+cell.type.prop.plot <- ggplot(cell.type.prop, aes(x = cell.type, y = proportion)) +
   geom_boxplot()
+ggsave(filename = "cell_type_proportion.png",
+       plot = cell.type.prop.plot,
+       path = "./results/plots/TC_TME_analysis/")
