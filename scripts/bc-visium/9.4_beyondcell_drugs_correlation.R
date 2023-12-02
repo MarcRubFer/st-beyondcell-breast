@@ -9,8 +9,16 @@ library("ComplexHeatmap")
 library("circlize")
 library("RColorBrewer")
 
+out.dir <- "./results"
+dir.create(path = out.dir, recursive = TRUE)
+
+# establish seed
+set.seed(1)
+
+# Load beyondcell object
 bc.ranked <- readRDS("./results/analysis/bc_ranked_all.rds")
 
+# Extract top High/Low-Differential Drugs 
 top.diff <- as.data.frame(bc.ranked@ranks) %>%
   select(starts_with(match = "TCs_res.0.3.group.")) %>%
   rownames_to_column("signature") %>%
@@ -20,20 +28,25 @@ top.diff <- as.data.frame(bc.ranked@ranks) %>%
   pull("signature") %>%
   unique()
 
+# Extract data about of enrichment (bcScore) of top.diff
 distrib.enrich <- bc.ranked@normalized[top.diff,] 
 dim(distrib.enrich)
 distrib.enrich <- t(distrib.enrich)
 dim(distrib.enrich)
 distrib.enrich <- as.data.frame(distrib.enrich) %>%
   rownames_to_column("spot")
+
+#Extract metadata for Cancer epithelial proportion and TCs
 distrib.metadata <- bc.ranked@meta.data %>%
   select(Cancer.Epithelial, TCs_res.0.3) %>%
   rownames_to_column("spot")
+
+# Merge by spot-ID both data
 distrib.total <- right_join(distrib.metadata,distrib.enrich, by = "spot")
 rownames(distrib.total) <- distrib.total$spot
 
-distrib.total.pivot <- distrib.total %>%
-  pivot_longer(cols = -c(spot,Cancer.Epithelial,TCs_res.0.3), names_to = "signatures", values_to = "enrichment")
+#distrib.total.pivot <- distrib.total %>%
+#  pivot_longer(cols = -c(spot,Cancer.Epithelial,TCs_res.0.3), names_to = "signatures", values_to = "enrichment")
 
 library(ggstatsplot)
 
@@ -43,6 +56,8 @@ library(ggstatsplot)
 #'ggstatsplot' approach. Journal of Open Source Software, 6(61), 3167,
 #doi:10.21105/joss.03167
 
+# This function create correlation plots (ggstatplot library). Correlation between
+# top.diff drug and its enrichment score
 plot.correlation.list <- function(df,drugs,idents,cluster){
   plots <- lapply(drugs, function(drug){
     data <- df %>%
@@ -63,26 +78,20 @@ plot.correlation.list <- function(df,drugs,idents,cluster){
   return(plots)
 }
 
-#plots.TC3 <- plot.correlation.list(df = distrib.total, drugs = top.diff, idents = "TCs_res.0.3", cluster = "TC-3")
-
+# Extract levels of TCs
 TCs <- unique(levels(bc.ranked@meta.data$TCs_res.0.3))
 
+# Create a list of plots with the information of correlation drug-enrichment in 
+# each TC
 plots.TCs <- lapply(TCs, function(TC){
   plot.TC <- plot.correlation.list(df = distrib.total,
                                    drugs = top.diff,
                                    idents = "TCs_res.0.3",
                                    cluster = TC)
 })
-#stats.TC3 <- lapply(seq_along(drugs), function(index){
-#  drug <- drugs[index]
-#  df <- as.data.frame(x = drug)
-#  stats <- extract_stats(plots.TC3[[index]])
-#  stats <- stats$subtitle_data
-#  df <- merge(df,stats)
-#  return(df)
-#})
-#stats.TC3.df <- do.call(rbind,stats.TC3)
 
+# This function extract the information of each correlation drug-enrichment plot
+# and create a data frame
 stats.function <- function(drugs,plots.list,cluster){
   stats.cluster <- lapply(seq_along(drugs), function(index){
     drug <- drugs[index]
@@ -97,8 +106,7 @@ stats.function <- function(drugs,plots.list,cluster){
   return(stats.cluster.df)
 }
 
-#stats.TC3 <- stats.function(drugs = top.diff, plots.list = plots.TC3, cluster = "TC-3")
-
+# Create a list with the extracted information from correlation plots
 stats.TCs <- lapply(seq_along(TCs), function(TC){
   plots <- plots.TCs[[TC]]
   stats <- stats.function(drugs = top.diff,
@@ -107,13 +115,13 @@ stats.TCs <- lapply(seq_along(TCs), function(TC){
   return(stats)
 })
 
+# Merge the information of all TCs in a unique data frame
 stats.TCs.global <- do.call(rbind,stats.TCs)
 
-stats.TC1.df.split <- stats.TCs.global %>%
-  filter(TC == "TC-1") %>%
-  select(drug,estimate,p.value) %>%
-  rename(estimate.TC1 = estimate,
-         p.value.TC1 = p.value)
+write.table(stats.TCs.global,
+            file = "./results/tables/table_correlation_drugs_enrichment_global.tsv",
+            sep = "\t")
+
 
 stats.split.list <- lapply(seq_along(TCs), function(index){
   split <- stats.TCs.global %>%
@@ -123,8 +131,6 @@ stats.split.list <- lapply(seq_along(TCs), function(index){
     rename_with(.fn = ~paste0("p.value.",TCs[index]), .cols = p.value) %>%
     mutate(drug = NULL)
 })
-
-
 stats.split.merged <- do.call(cbind,stats.split.list)
 rownames(stats.split.merged) <- top.diff
 
@@ -140,23 +146,20 @@ pvalue_col_fun = colorRamp2(c(0, 2, 3), c("white", "white", "yellow"))
 p.value.df <- stats.split.merged %>%
   select(all_of(starts_with("p.value")))
 
-# p.values
-pvalue.TC1 = p.value.df$`p.value.TC-1`
-is_sig.TC1 = pvalue.TC1 < 0.01
-pch.TC1 = rep("*", length(pvalue.TC1))
-pch.TC1[!is_sig] = NA
-
-list <- lapply(c(1:6), function(x){
+# Create a list with contain significance of p.values and named
+list.pvalue <- lapply(c(1:6), function(x){
   p.value <- p.value.df[,x]
   is_sig = p.value < 0.01
-  pch = rep("*", length(pvalue.TC1))
+  pch = rep("*", length(p.value))
   pch[!is_sig] = NA
   l <- list(p.value = p.value,
             pch = pch)
   return(l)
 })
-names(list) <- TCs
-names(list)
+names(list.pvalue) <- TCs
+names(list.pvalue)
+
+# Colors for TCs legend
 TC.colors <- c("TC-1" = "#00b2d7",
                "TC-2" = "#e5c22f",
                "TC-3" = "#903ca2",
@@ -170,60 +173,52 @@ collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.dr
 collapsed.moas <- as.data.frame(collapsed.moas)
 rownames(collapsed.moas) <- collapsed.moas$top.diff
 
+
+# Create Heatmap
 ht <- Heatmap(
-  matrix = matrix.cor[,1],
+  matrix = matrix.cor,
   name = "Correlation",
-  width = unit(5, "cm"),
+  width = unit(20, "cm"),
   row_labels = toupper(collapsed.moas$preferred.drug.names),
   row_names_gp = gpar(fontsize = 7),
   cluster_columns = F,
   show_column_names = F,
   cluster_rows = F,
-  top_annotation = HeatmapAnnotation(TC = TCs[1],
+  top_annotation = HeatmapAnnotation(TC = TCs,
                                      col = list("TC" = TC.colors)),
   right_annotation = rowAnnotation(
-    pvalue.TC1 = anno_simple(-log10(list[["TC-1"]][["p.value"]]), 
+    pvalue.TC1 = anno_simple(-log10(list.pvalue[["TC-1"]][["p.value"]]), 
                              col = pvalue_col_fun, 
-                             pch = list[["TC-1"]][["pch"]])),
+                             pch = list.pvalue[["TC-1"]][["pch"]]),
+    pvalue.TC2 = anno_simple(-log10(list.pvalue[["TC-2"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list.pvalue[["TC-2"]][["pch"]]),
+    pvalue.TC3 = anno_simple(-log10(list.pvalue[["TC-3"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list.pvalue[["TC-3"]][["pch"]]),
+    pvalue.TC4 = anno_simple(-log10(list.pvalue[["TC-4"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list.pvalue[["TC-4"]][["pch"]]),
+    pvalue.TC5 = anno_simple(-log10(list.pvalue[["TC-5"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list.pvalue[["TC-5"]][["pch"]]),
+    pvalue.TC6 = anno_simple(-log10(list.pvalue[["TC-6"]][["p.value"]]), 
+                             col = pvalue_col_fun, 
+                             pch = list.pvalue[["TC-6"]][["pch"]])
+    ),
   layer_fun = function(j, i, x, y, width, height, fill) {
     # since grid.text can also be vectorized
     grid.text(sprintf("%.1f", pindex(matrix.cor, i, j)), x, y, 
               gp = gpar(fontsize = 10))
     }
 )
+ht <- draw(ht, merge_legend = TRUE)
 ht
-ht1 <- ht[, 1] + rowAnnotation(
-  pvalue.TC1 = anno_simple(-log10(list[["TC-1"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-1"]][["pch"]])
-)
-ht2 <- ht[, 2]+ rowAnnotation(
-  pvalue.TC2 = anno_simple(-log10(list[["TC-2"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-2"]][["pch"]])
-  )
-ht3 <- ht[, 3]+ rowAnnotation(
-  pvalue.TC3 = anno_simple(-log10(list[["TC-3"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-3"]][["pch"]])
-)
-ht4 <- ht[, 4]+ rowAnnotation(
-  pvalue.TC4 = anno_simple(-log10(list[["TC-4"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-4"]][["pch"]])
-)
-ht5 <- ht[, 5]+ rowAnnotation(
-  pvalue.TC5 = anno_simple(-log10(list[["TC-5"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-5"]][["pch"]])
-)
-ht6 <- ht[, 6]+ rowAnnotation(
-  pvalue.TC6 = anno_simple(-log10(list[["TC-6"]][["p.value"]]), 
-                           col = pvalue_col_fun, 
-                           pch = list[["TC-6"]][["pch"]])
-)
-
-
-figure.correlation <- ht1 + ht2 + ht3 + ht4 + ht5 + ht6
-figure.correlation
-
+# Save heatmap as png
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Correlation_heatmap.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(ht)
+dev.off()
