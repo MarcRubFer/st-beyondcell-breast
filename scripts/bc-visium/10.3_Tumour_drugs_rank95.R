@@ -305,7 +305,7 @@ heatmap.drugs.Tumour.cancerepith <- Heatmap(
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.Tumour$preferred.drug.names),
   cluster_rows = T,
-  row_split = 4,
+  row_split = 5,
   col = colorRamp2(c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.Tumour.min, 0, drugs.matrix.Tumour.max))
 )      
