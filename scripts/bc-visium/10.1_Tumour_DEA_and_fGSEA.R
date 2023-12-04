@@ -87,7 +87,7 @@ gsea.table <- results.gsea %>%
          FDR.q.val = padj, COMPARISON = TC)
 
 chosen.fun.sigs <- gsea.table %>%
-  slice_max(order_by = NES, n = 30, by = COMPARISON) %>%
+  slice_max(order_by = NES, n = 25, by = COMPARISON) %>%
   pull(NAME) %>%
   unique()
 
