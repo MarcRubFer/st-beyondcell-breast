@@ -23,7 +23,9 @@ It is recommended to use conda enviroments located in envs directory
 - Seurat: version 4.3.0.1
 - spacexr: version 2.2.1
 - clustree: version 0.5.1
-- scSHC: version
-- ggsankey: version
+- scSHC: version 0.1.0
+- ggsankey: version 0.0.99999
 - PASTE: version
+- fgsea: version 1.26.0
+- ComplexHeatmap: 2.16.0
 - Beyondcell: version 2.2.0
