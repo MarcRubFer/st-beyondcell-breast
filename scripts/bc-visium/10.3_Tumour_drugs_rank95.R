@@ -256,22 +256,22 @@ max_v = round(max(col.order.Tumour2$Cancer.Epithelial), 2)
 scale.cancer = circlize::colorRamp2(seq(min_v, max_v, length = n), hcl.colors(n,"viridis"))
 
 # Scale color for Lymphoid
-n.lymphoid = length(col.order.Tumour2$Lymphoid)
-min_lymphoid = round(min(col.order.Tumour2$Lymphoid), 2)
-max_lymphoid = round(max(col.order.Tumour2$Lymphoid), 2)
-scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
+# n.lymphoid = length(col.order.Tumour2$Lymphoid)
+# min_lymphoid = round(min(col.order.Tumour2$Lymphoid), 2)
+# max_lymphoid = round(max(col.order.Tumour2$Lymphoid), 2)
+# scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
 
 # Scale color for B cells
-n.bcells = length(col.order.Tumour2$B.cells)
-min_bcells = round(min(col.order.Tumour2$B.cells), 2)
-max_bcells = round(max(col.order.Tumour2$B.cells), 2)
-scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
+# n.bcells = length(col.order.Tumour2$B.cells)
+# min_bcells = round(min(col.order.Tumour2$B.cells), 2)
+# max_bcells = round(max(col.order.Tumour2$B.cells), 2)
+# scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
 
 # Scale color for T cells
-n.tcells = length(col.order.Tumour2$T.cells)
-min_tcells = round(min(col.order.Tumour2$T.cells), 2)
-max_tcells = round(max(col.order.Tumour2$T.cells), 2)
-scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
+# n.tcells = length(col.order.Tumour2$T.cells)
+# min_tcells = round(min(col.order.Tumour2$T.cells), 2)
+# max_tcells = round(max(col.order.Tumour2$T.cells), 2)
+# scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
 
 # Draw Heatmap
 heatmap.drugs.Tumour.cancerepith <- Heatmap(
@@ -280,15 +280,15 @@ heatmap.drugs.Tumour.cancerepith <- Heatmap(
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order.Tumour2$TCs_res.0.3,
                                      "Cancer Epith" = col.order.Tumour2$Cancer.Epithelial,
-                                     "Lymphoid" = col.order.Tumour2$Lymphoid,
-                                     "B cells" = col.order.Tumour2$B.cells,
-                                     "T cells" = col.order.Tumour2$T.cells,
+                                     #"Lymphoid" = col.order.Tumour2$Lymphoid,
+                                     #"B cells" = col.order.Tumour2$B.cells,
+                                     #"T cells" = col.order.Tumour2$T.cells,
                                      "Cell type" = col.order.Tumour2$spot.collapse,
                                      col = list("TCs" = TC.colors,
                                                 "Cancer Epith" = scale.cancer,
-                                                "Lymphoid" = scale.lymphoid,
-                                                "B cells" = scale.bcells,
-                                                "T cells" = scale.tcells,
+                                                #"Lymphoid" = scale.lymphoid,
+                                                #"B cells" = scale.bcells,
+                                                #"T cells" = scale.tcells,
                                                 "Cell type" = colors.categories)),
   right_annotation = rowAnnotation(TC3.sens = collapsed.moas.Tumour$TC3.sensitivity,
                                    TC4.sens = collapsed.moas.Tumour$TC4.sensitivity,
