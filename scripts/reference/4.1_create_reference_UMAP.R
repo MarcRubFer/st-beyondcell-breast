@@ -35,57 +35,83 @@ seurat.refHER2.SCT <- SCTransform(seuratobj.refHER2.filtered,
                         assay = "RNA", 
                         return.only.var.genes = TRUE, 
                         verbose = TRUE,
-                        min_cells = 100,
                         vst.flavor = "v1")
 seurat.refHER2.SCT <- RunPCA(seurat.refHER2.SCT, 
                    assay = "SCT", 
                    npcs = 50, 
                    features = VariableFeatures(seurat.refHER2.SCT))
 
+head(seurat.refHER2.SCT)
 dimplot <- DimPlot(seurat.refHER2.SCT, group.by = "celltype_major", cols = cell.colors)
+DimPlot(seurat.refHER2.SCT, group.by = "orig.ident") | DimPlot(seurat.refHER2.patient, group.by = "orig.ident") 
+# Regression by patient (orig.ident)
+seurat.refHER2.patient <- SCTransform(seurat.refHER2.SCT, 
+                                      assay = "RNA", 
+                                      vars.to.regress = "orig.ident",
+                                      return.only.var.genes = TRUE, 
+                                      verbose = TRUE)
+seurat.refHER2.patient <- RunPCA(seurat.refHER2.patient, 
+                             assay = "SCT", 
+                             npcs = 50, 
+                             features = VariableFeatures(seurat.refHER2.patient))
+dimplot.patient <- DimPlot(seurat.refHER2.patient, group.by = "celltype_major", cols = cell.colors) +
+  ggtitle("patient regressed")
+
+dimplot | dimplot.patient
 
 # Cell cycle effect
 g2m.genes <- cc.genes$g2m.genes
 s.genes <- cc.genes$s.genes
 
-seurat.refHER2.phase <- CellCycleScoring(seurat.refHER2.SCT,
+seurat.refHER2.pre.phase <- CellCycleScoring(seurat.refHER2.patient,
                               g2m.features = g2m.genes, 
                               s.features = s.genes, 
                               assay = "SCT")
-seurat.refHER2.phase <- RunPCA(seurat.refHER2.phase, 
+seurat.refHER2.pre.phase <- RunPCA(seurat.refHER2.pre.phase, 
                     assay = "SCT", 
                     npcs = 50, 
-                    features = VariableFeatures(seurat.refHER2.phase))
+                    features = VariableFeatures(seurat.refHER2.pre.phase))
 
-Idents(seurat.refHER2.phase) <- "Phase"
-cell.cycle.without <- DimPlot(seurat.refHER2.phase, cols = cell.cycle.colors) + ggtitle("Non-regressed cell cycle")
-cell.cycle.phase.without <- DimPlot(seurat.refHER2.phase, split.by = "Phase", cols = cell.cycle.colors)
+Idents(seurat.refHER2.pre.phase) <- "Phase"
+cell.cycle.without <- DimPlot(seurat.refHER2.pre.phase, cols = cell.cycle.colors) + ggtitle("Non-regressed cell cycle")
+cell.cycle.phase.without <- DimPlot(seurat.refHER2.pre.phase, split.by = "Phase", cols = cell.cycle.colors)
 patch.cell.cycle.without <- cell.cycle.without + cell.cycle.phase.without
 
-elbow <- ElbowPlot(seurat.refHER2.phase, 
-                   ndims = 50, 
-                   reduction = "pca")
+# Cell cycle regression
+seurat.refHER2.phase <- SCTransform(seurat.refHER2.pre.phase, 
+                                      assay = "RNA", 
+                                      vars.to.regress = c("S.Score", "G2M.Score"),
+                                      return.only.var.genes = TRUE, 
+                                      verbose = TRUE)
+seurat.refHER2.phase <- RunPCA(seurat.refHER2.phase, 
+                                   assay = "SCT", 
+                                   npcs = 50, 
+                                   features = VariableFeatures(seurat.refHER2.phase))
+
+Idents(seurat.refHER2.phase) <- "Phase"
+cell.cycle.with <- DimPlot(seurat.refHER2.phase, cols = cell.cycle.colors) + ggtitle("Regressed cell cycle")
+cell.cycle.phase.with <- DimPlot(seurat.refHER2.phase, split.by = "Phase", cols = cell.cycle.colors)
+patch.cell.cycle.with <- cell.cycle.with + cell.cycle.phase.with
 
 
-seurat.refHER2.clusters <- FindNeighbors(seurat.refHER2.phase, 
-                                    reduction = "pca", 
-                                    dims = 1:20, 
-                                    k.param = 20)
-res <- c(0.1,0.2,0.3,0.4,0.5)
-seurat.refHER2.clusters <- FindClusters(seurat.refHER2.clusters, 
-                                   resolution = res, 
-                                   verbose = FALSE)
+patch.cell.cycle.without | patch.cell.cycle.with
 
-# Run UMAP
-seurat.refHER2.clusters <- RunUMAP(seurat.refHER2.clusters, 
-                              reduction = "pca", 
-                              dims = 1:20, 
-                              n.components = 2)
 
-# Clustree plots
-clustree.plot <- clustree(seurat.refHER2.clusters, 
-                          prefix = "SCT_snn_res.",
-                          node_colour = "sc3_stability") 
+seurat.refHER2.UMAP <- RunUMAP(seurat.refHER2.phase, 
+                                   reduction = "pca", 
+                                   dims = 1:20, 
+                                   n.components = 2)
 
-UMAP <- DimPlot(seurat.refHER2.clusters, reduction = "umap", group.by = "celltype_major", cols = cell.colors) + NoLegend()
-LabelClusters(plot = UMAP, id = "celltype_major", box = TRUE)
+UMAP.celltype <- DimPlot(seurat.refHER2.UMAP, reduction = "umap", group.by = "celltype_major", cols = cell.colors, label = T, label.box = T) + NoLegend() + ggtitle("Cell type")
+UMAP.patient <- DimPlot(seurat.refHER2.UMAP, reduction = "umap", group.by = "orig.ident", label = T, label.box = T) + NoLegend() + ggtitle("Patient")
+
+UMAP.patch <- UMAP.celltype | UMAP.patient
+UMAP.patch
+
+ggsave(filename = "UMAP_reference_celltypes.png",
+       plot = UMAP.celltype,
+       path = "./results/plots/reference/",
+       scale = 1,
+       width = 12,
+       height = 12,
+       units = "in")
