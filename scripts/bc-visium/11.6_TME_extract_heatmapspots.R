@@ -1,5 +1,5 @@
 # Draw Heatmap
-heatmap.drugs.TME.cancerepith <- Heatmap(
+heatmap.drugs.TME.cancerepith2 <- Heatmap(
   drugs.matrix.TME2,
   name = "bcScore",
   cluster_columns = T,
@@ -23,16 +23,92 @@ heatmap.drugs.TME.cancerepith <- Heatmap(
                                               TC2.sens = col.sensitivity)),
   show_column_names = FALSE,
   #column_split = col.order.TME2$TCs_res.0.3,
-  column_km = 6,
+  column_km = 7,
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
   cluster_rows = T,
-  row_split =  5,
+  column_gap = unit(5,"mm"),
+  row_split =  2,
   col = colorRamp2(c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max), c("blue", "white", "red")),
   heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
 )      
-heatmap.drugs.TME.cancerepith
-c.order.list <- column_order(heatmap.drugs.TME.cancerepith)
-c.dend <- column_dend(heatmap.drugs.TME.cancerepith)
-
+heatmap.drugs.TME.cancerepith2
+ht = draw(heatmap.drugs.TME.cancerepith2) 
+c.order.list <- column_order(ht)
+c.dend <- column_dend(ht)
+dev.off()
 lapply(c.order.list, function(x) length(x))
+
+# Extract spotID for each cluster and create a data frame
+c.order.list <- c.order.list[order(names(c.order.list))]
+cluster.colum <- lapply(seq_along(c.order.list), FUN = function(index) {
+  cluster <- c.order.list[[index]]
+  spot <- colnames(drugs.matrix.TME2)[cluster]
+  spot <- as.data.frame(spot)
+  spot <- spot %>%
+    mutate(cluster = paste0("cluster",index))
+})
+cluster.colum <- do.call(rbind, cluster.colum)
+
+cluster2 <- cluster.colum %>%
+  filter(cluster == "cluster2") %>%
+  select(spot) %>%
+  pull()
+
+cluster1 <- cluster.colum %>%
+  filter(cluster == "cluster1") %>%
+  select(spot) %>%
+  pull()
+
+bc.ranked.TME <- bcUMAP(bc.ranked.TME, 
+                        pc = 10, 
+                        k.neighbors = 20, 
+                        res = 0.3)
+
+cols.highlight <- c("cluster1" = "#4f5be2",
+                    "cluster2" = "#ff802b",
+                    "non.selected" = "#019453")
+
+bcClusters(bc.ranked.TME, idents = "spot.collapse", spatial = T, mfrow = c(1,2), cells.highlight = list(cluster1,cluster2), cols.highlight = cols.highlight)
+
+seurat.TME <- readRDS("./results/analysis/seuratobj.TME-TCs.rds")
+
+TLS.genes <- c("CCL19", "CCL21","CXCL13", "CCR7", "SELL","LAMP3","CXCR4","CD86","BCL6")
+
+rownames(cluster.colum) <- cluster.colum$spot
+
+col.order.TLS <- cluster.colum %>%
+  arrange(desc(cluster))
+col.order.TLS.spots <- col.order.TLS %>%
+  select(spot) %>%
+  pull()
+
+
+TLS.norm.data <- seurat.TME@assays$SCT@data[TLS.genes,]
+TLS.norm.data <- as.matrix(TLS.norm.data)
+TLS.norm.data <- TLS.norm.data[,col.order.TLS.spots]
+# Scale color for heatmap
+n.cluster = length(col.order.TLS$cluster)
+min_cluster = round(min(TLS.norm.data), 2)
+max_cluster = round(max(TLS.norm.data), 2)
+scale.expression = circlize::colorRamp2(seq(min_cluster, max_cluster, length = n.cluster), (hcl.colors(n.cancer,"PuRd")))
+scale.expression.rev = circlize::colorRamp2(seq(min_cluster, max_cluster, length = n.cluster), rev(hcl.colors(n.cancer,"PuRd")))
+col_fun = colorRamp2(c(min_cluster,max_cluster), c("purple", "yellow"))
+
+ht <- Heatmap(matrix = TLS.norm.data,
+        #col = scale.expression,
+        col = scale.expression.rev,
+        #col = col_fun,
+        show_column_names = F,
+        cluster_columns = F,
+        column_gap = unit(3, "mm"),
+        column_split = col.order.TLS$cluster,
+        top_annotation = HeatmapAnnotation("cluster" = col.order.TLS$cluster,
+                                           show_annotation_name = T,
+                                           annotation_name_gp = gpar(fontsize = 5)),
+        column_names_gp = gpar(fontsize = 3))
+ht <- draw(ht)
+list_components()
+decorate_title("matrix_40", {
+  grid.text(label = "cluster",gp = gpar(fontsize = 6))
+}, slice = 2)
