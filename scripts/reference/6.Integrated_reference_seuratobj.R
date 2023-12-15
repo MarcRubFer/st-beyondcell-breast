@@ -7,7 +7,6 @@ dir.create(path = out.dir, recursive = TRUE)
 rm(list = ls())
 
 # Packages
-library("spacexr")
 library("Seurat")
 library("tidyverse")
 library("patchwork")
@@ -47,7 +46,7 @@ seurat.refHER2.integrated <- IntegrateData(anchorset = patient.anchors,
 seurat.refHER2.integrated <- RunPCA(seurat.refHER2.integrated, verbose = FALSE)
 seurat.refHER2.integrated <- RunUMAP(seurat.refHER2.integrated, reduction = "pca", dims = 1:30)
 
-cell.colors <- c("B-cells" = "cornflowerblue",
+cell.colors.reference <- c("B-cells" = "cornflowerblue",
                  "CAFs" = "goldenrod2",
                  "Cancer Epithelial" = "red3",
                  "Endothelial" = "seagreen4",
@@ -58,8 +57,11 @@ cell.colors <- c("B-cells" = "cornflowerblue",
                  "T-cells" = "steelblue4")
 
 dimplot.patients.integrated <- DimPlot(seurat.refHER2.integrated, reduction = "umap", group.by = "orig.ident" )
-dimplot.celltype.integrated <- DimPlot(seurat.refHER2.integrated, reduction = "umap", group.by = "celltype_major", cols = cell.colors, label = T, label.box = T)
+dimplot.celltype.integrated <- DimPlot(seurat.refHER2.integrated, reduction = "umap", group.by = "celltype_major", cols = cell.colors.reference, label = T, label.box = T) + NoLegend()
+dimplot.celltype.integrated.nolabel <- DimPlot(seurat.refHER2.integrated, reduction = "umap", group.by = "celltype_major", cols = cell.colors.reference) 
 
-all.plots.integrated <- list(dimplot.celltype.integrated, dimplot.patients.integrated)
+(dimplot.celltype.integrated + ggtitle("Cell type")) | (dimplot.patients.integrated + ggtitle("Patients"))
+
+all.plots.integrated <- list(dimplot.celltype.integrated, dimplot.patients.integrated, dimplot.celltype.integrated.nolabel)
 save(all.plots.integrated, file = paste0("./results/ggplots/reference/integrated_plots.RData"))
 saveRDS(seurat.refHER2.integrated, file = "./results/analysis/reference/seurat.refHER2.integrated.rds")

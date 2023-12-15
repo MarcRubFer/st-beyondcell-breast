@@ -25,6 +25,15 @@ names(colors)
 colors <- colors[order(names(colors))]
 colors
 
+cell.colors <- c("B-CELLS" = "cornflowerblue",
+                 "CAFS" = "goldenrod2",
+                 "CANCER EPITHELIAL" = "red3",
+                 "ENDOTHELIAL" = "seagreen4",
+                 "MYELOID" = "darkorchid",
+                 "NORMAL EPITHELIAL" = "hotpink",
+                 "PLASMABLASTS" = "greenyellow",
+                 "PVL" = "darkorange1",
+                 "T-CELLS" = "steelblue4")
 ############
 ## CODE ##
 # Random seed
@@ -97,6 +106,7 @@ boxp.props <- df.boxplot %>%
          cell.type = toupper(cell.type)) %>%
   ggplot(aes(x=cell.type, y=prop.cell.type)) +
   geom_boxplot(aes(fill = cell.type)) +
+  scale_fill_manual(values = cell.colors) +
   guides(fill = guide_legend(title = "Cell types")) +
   ylab(label = "Cell type proportion") +
   facet_grid(~spot.collapse) + 
@@ -116,15 +126,18 @@ boxp.props <- as.ggplot(gt)
 boxp.props 
 
 
+# Load UMAP plots from integrated reference
+load("./results/ggplots/reference/integrated_plots.RData")
 
-
+dimplot.celltype.integrated <- all.plots.integrated[[1]] + ggtitle(label = NULL) + NoLegend()
 
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.collapse", cols = colors) + plot_layout(guides = "collect") &
   guides(fill = guide_legend(title = "Categories"))
 
-bottom <- plot_grid(num.spots,NULL,spatial.distrib.spotcomp, ncol = 3, labels = c("B","","C"), rel_widths = c(1,0.01,1))
+up <- plot_grid(dimplot.celltype.integrated, NULL, boxp.props, ncol = 3,labels = c("A","","B"), rel_widths = c(0.6,0.03,1))
+bottom <- plot_grid(num.spots,NULL,spatial.distrib.spotcomp, ncol = 3, labels = c("C","","D"), rel_widths = c(1,0.03,1))
 bottom
-figure1 <- plot_grid(boxp.props,NULL,bottom, ncol = 1, labels = c("A","",""),rel_heights = c(1,0.01,1))
+figure1 <- plot_grid(up,NULL,bottom, ncol = 1,rel_heights = c(1,0.1,1))
 figure1
 
 ggsave(filename = "Figure1.png",
