@@ -23,7 +23,7 @@ heatmap.drugs.TME.cancerepith2 <- Heatmap(
                                               TC2.sens = col.sensitivity)),
   show_column_names = FALSE,
   #column_split = col.order.TME2$TCs_res.0.3,
-  column_km = 7,
+  column_km = 4,
   row_names_gp = gpar(fontsize = 6),
   row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
   cluster_rows = T,
@@ -50,13 +50,18 @@ cluster.colum <- lapply(seq_along(c.order.list), FUN = function(index) {
 })
 cluster.colum <- do.call(rbind, cluster.colum)
 
+cluster1 <- cluster.colum %>%
+  filter(cluster == "cluster1") %>%
+  select(spot) %>%
+  pull()
+
 cluster2 <- cluster.colum %>%
   filter(cluster == "cluster2") %>%
   select(spot) %>%
   pull()
 
-cluster1 <- cluster.colum %>%
-  filter(cluster == "cluster1") %>%
+cluster3 <- cluster.colum %>%
+  filter(cluster == "cluster3") %>%
   select(spot) %>%
   pull()
 
@@ -69,7 +74,12 @@ cols.highlight <- c("cluster1" = "#4f5be2",
                     "cluster2" = "#ff802b",
                     "non.selected" = "#019453")
 
-bcClusters(bc.ranked.TME, idents = "spot.collapse", spatial = T, mfrow = c(1,2), cells.highlight = list(cluster1,cluster2), cols.highlight = cols.highlight)
+bcClusters(bc.ranked.TME, 
+           idents = "spot.collapse", 
+           spatial = T, mfrow = c(1,2), 
+           cells.highlight = list("cluster1" = cluster1,
+                                  "cluster2" = cluster2,
+                                  "cluster3" = cluster3))
 
 seurat.TME <- readRDS("./results/analysis/seuratobj.TME-TCs.rds")
 
@@ -95,7 +105,7 @@ scale.expression = circlize::colorRamp2(seq(min_cluster, max_cluster, length = n
 scale.expression.rev = circlize::colorRamp2(seq(min_cluster, max_cluster, length = n.cluster), rev(hcl.colors(n.cancer,"PuRd")))
 col_fun = colorRamp2(c(min_cluster,max_cluster), c("purple", "yellow"))
 
-ht <- Heatmap(matrix = TLS.norm.data,
+ht.TLS <- Heatmap(matrix = TLS.norm.data,
         #col = scale.expression,
         col = scale.expression.rev,
         #col = col_fun,
@@ -107,8 +117,55 @@ ht <- Heatmap(matrix = TLS.norm.data,
                                            show_annotation_name = T,
                                            annotation_name_gp = gpar(fontsize = 5)),
         column_names_gp = gpar(fontsize = 3))
-ht <- draw(ht)
-list_components()
-decorate_title("matrix_40", {
-  grid.text(label = "cluster",gp = gpar(fontsize = 6))
-}, slice = 2)
+ht.TLS
+
+gs.TLS <- GenerateGenesets(x = "./data/gmts/TLS_sig.gmt")
+
+bc.TLS <- bcScore(seurat.TME,
+                  gs = gs.TLS,
+                  expr.thres = 0.1)
+# Number of NAs
+n.NA.TLS <- data.frame(nNAs = colSums(is.na(bc.TLS@normalized)),
+                   row.names = colnames(bc.TLS@normalized))
+bc.TLS <- bcAddMetadata(bc.TLS, n.NA.TLS)
+bc.TLS@meta.data
+# Filter out spots with a high percentage of NAs
+bc.TLS <- bcSubset(bc.TLS, nan.cells = 0.95)
+# Replace NAs by 0s
+bc.TLS@normalized[is.na(bc.TLS@normalized)] <- 0
+bc.TLS.recomputed <- bcRecompute(bc.TLS, slot = "normalized")
+
+res <- c(0.1, 0.2, 0.3, 0.4, 0.5)
+
+## NO FUNCIONA ##
+bc.TLS.recomputed <- bcUMAP(bc.TLS.recomputed, 
+                        pc = 10, 
+                        k.neighbors = 20, 
+                        res = 0.3)
+head(bc.TLS.recomputed@meta.data)
+dim(bc.TLS.recomputed@meta.data)
+?bcMerge
+
+bc.merged <- bcMerge(bc1 = bc.ranked.TME, bc2 = bc.TLS.recomputed, keep.bc.clusters = TRUE)
+bcSignatures(bc.TLS.recomputed)
+##
+data <- as.data.frame(t(bc.TLS.recomputed@normalized)) %>%
+  rownames_to_column("spot")
+
+spot.data <- data %>%
+  select(spot) %>%
+  pull()
+cluster.selec <- cluster.colum %>%
+  filter(spot %in% spot.data)
+
+data.merged <- left_join(data, cluster.selec, by = "spot")
+
+data.boxplot <- ggplot(data.merged, aes(x=cluster, y=TLS_CABRITA)) +
+  geom_boxplot()
+
+library(ggstatsplot)
+
+stats.plot <-ggbetweenstats(data = data.merged,
+               x = cluster,
+               y = TLS_CABRITA)
+extract_stats(stats.plot)
