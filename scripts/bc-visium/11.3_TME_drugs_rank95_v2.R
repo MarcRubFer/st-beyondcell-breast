@@ -76,9 +76,9 @@ write.table(x = df.top.diff.TME,
 
 # HeatMap Drugs
 # Matrix of TOP-Differential Drugs
-dim(bc.ranked.TME@normalized)
-drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
-dim(drugs.matrix.TME)
+#dim(bc.ranked.TME@normalized)
+#drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
+#dim(drugs.matrix.TME)
 
 # Update: for maximize differences in heatmap we will use scaled data. But 
 # we need to transform data to mantein switch point info (SP)
@@ -88,9 +88,16 @@ length(bc.ranked.TME@switch.point)
 drugs.matrix.TME <- bc.ranked.TME@scaled[top.diff.TME,]
 sp <- bc.ranked.TME@switch.point[top.diff.TME]
 
+# Substract the value of switch point to each scaled enrichment data
 drugs.matrix.TME <- apply(X = drugs.matrix.TME, MARGIN = 2, FUN = function(x) {x-sp})
 
-
+# Re-scale the data as follow:
+# For row:
+#   If all data for a drug are positive (UP sig) -> re-scale [0,1]
+#   If all data for a drug are negative (DOWN sig) -> re-scale [-1,0]
+#   If data contain positive and negative values (UP_DOWN sig):
+#     - Re-scale values positive (include 0) between [0,1]
+#     - Re-scale values negative (include 0) between [-1,0]
 drugs.matrix.TME <- t(apply(X = drugs.matrix.TME, MARGIN = 1, FUN = function(x){
   if (all(x >= 0)){
     scaled.row <- scales::rescale(x, to = c(0,1))
@@ -111,32 +118,31 @@ drugs.matrix.TME <- t(apply(X = drugs.matrix.TME, MARGIN = 1, FUN = function(x){
   } 
   return(scaled.row)
 }))
+
+# Round values to two decimal digits
 drugs.matrix.TME <- t(apply(drugs.matrix.TME, 1, function(x){round(x,2)}))
 
-col.order.TME <- bc.ranked.TME@meta.data %>%
-  select(TCs_res.0.3, spot.collapse, Cancer.Epithelial) %>%
-  arrange(TCs_res.0.3, spot.collapse,Cancer.Epithelial)
+# Heatmap with Deconvoluted cell types percentage
 
-col.order.spots.tme <- col.order.TME  %>%
+# Extract order spot by Cancer Epithelial deconvoluted proportion
+
+# Data frame with TCs, deconvoluted cell type proportions and categorization
+#   This data frame is arranged by TC and Cancer Epithelial proportion
+col.order.TME2 <- bc.ranked.TME@meta.data %>%
+  select(TCs_res.0.3, B.cells:T.cells, spot.collapse) %>%
+  mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
+  arrange(TCs_res.0.3,Cancer.Epithelial)
+
+# Extract order spots from arranged data.frame
+col.order.spots.tme2 <- col.order.TME2  %>%
   rownames_to_column("spots") %>%
   pull(spots)
 
-drugs.matrix.TME <- drugs.matrix.TME[,col.order.spots.tme]
+# Re-arrange matrix columns by ordered spots
+drugs.matrix.TME2 <- drugs.matrix.TME[,col.order.spots.tme2]
 
 
-# col.order by TCs and Cancer Epithelial proportion
-#
-#col.order.TME2 <- bc.ranked.TME@meta.data %>%
-#  select(TCs_res.0.3, Cancer.Epithelial,spot.collapse) %>%
-#  arrange(TCs_res.0.3,Cancer.Epithelial)
-#
-#col.order.spots.tme2 <- col.order.TME2  %>%
-#  rownames_to_column("spots") %>%
-#  pull(spots)
-#
-#drugs.matrix.TME2 <- drugs.matrix.TME[,col.order.spots.tme2]
-
-# Collapsed moas for breast-SSc signature 
+# Collapsed mechanism of action (MoA) for top-differential drugs
 ## Import manual collapsed moas TME drugs
 collapsed.moas.TME <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.TME.tsv")
 collapsed.moas.TME <- as.data.frame(collapsed.moas.TME)
@@ -160,7 +166,7 @@ cols.drugs.TME <- c("#cd9046",
                     "#b96260")
 names(cols.drugs.TME) <- names.moas.TME
 
-#High-LowSensitibity Differential by TCs
+# Extract High-LowSensibility Differential by TCs
 top.diff.TME.df <- as.data.frame(bc.ranked.TME@ranks) %>%
   select(starts_with(match = "TCs_res.0.3.group.")) %>%
   rownames_to_column("signature") %>%
@@ -181,6 +187,7 @@ TC2.sensitivity <- top.diff.TME.df %>%
   rename(TC2.sensitivity = group,
          top.diff = signature)
 
+# Add sensibility info to df.collapsed moas
 collapsed.moas.TME <- collapsed.moas.TME %>%
   left_join(TC1.sensitivity, by = join_by(top.diff)) %>%
   left_join(TC2.sensitivity,by = join_by(top.diff)) 
@@ -193,92 +200,44 @@ col.sensitivity <- c("HighSensitivity" = "yellow",
 drugs.matrix.TME.max <- max(apply(drugs.matrix.TME2, 1, function(row) max(row)))
 drugs.matrix.TME.min <- min(apply(drugs.matrix.TME2, 1, function(row) min(row)))
 
-heatmap.drugs.TME <- Heatmap(
-  drugs.matrix.TME,
-  name = "bcScore",
-  cluster_columns = FALSE,
-  top_annotation = HeatmapAnnotation("TCs" = col.order.TME$TCs_res.0.3,
-                                     "Cell type" = col.order.TME$spot.collapse,
-                                     col = list("TCs" = TC.colors[1:2],
-                                                "Cell type" = colors.categories)),
-  right_annotation = rowAnnotation(MoA = collapsed.moas.TME$collapsed.MoAs,
-                                   TC1.sens = collapsed.moas.TME$TC1.sensitivity,
-                                   TC4.sens = collapsed.moas.TME$TC2.sensitivity,
-                                   col = list(MoA = cols.drugs.TME,
-                                              TC1.sens = col.sensitivity,
-                                              TC2.sens = col.sensitivity)),
-  show_column_names = FALSE,
-  column_split = col.order.TME$TCs_res.0.3,
-  row_names_gp = gpar(fontsize = 6),
-  row_labels = toupper(collapsed.moas.TME$preferred.drug.names),
-  cluster_rows = T,
-  row_split = 6,
-  col = colorRamp2(c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max), c("blue", "white", "red")),
-  heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
-)      
-heatmap.drugs.TME
-heatmap.drugs.TME <- draw(heatmap.drugs.TME, merge_legend = TRUE)
-heatmap.drugs.TME
-png(filename = "./results/plots/TC_TME_analysis/heatmap_TME_TCs.png",
-    width = 48,
-    height = 24,
-    units = "cm",
-    res = 320)
-draw(heatmap.drugs.TME)
-dev.off()
-
-# HEatmap including Deconvoluted cell types percentage
-
-# col.order without spot.collapse
-#drugs.matrix.TME <- bc.ranked.TME@normalized[top.diff.TME,]
-col.order.TME2 <- bc.ranked.TME@meta.data %>%
-  select(TCs_res.0.3, B.cells:T.cells, spot.collapse) %>%
-  mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
-  arrange(TCs_res.0.3,Cancer.Epithelial)
-
-col.order.spots.tme2 <- col.order.TME2  %>%
-  rownames_to_column("spots") %>%
-  pull(spots)
-
-drugs.matrix.TME2 <- drugs.matrix.TME[,col.order.spots.tme2]
-
-# Scale color for cancer epithelial
+# Scales for Deconvoluted cell types
+## Scale color for cancer epithelial
 n.cancer = length(col.order.TME2$Cancer.Epithelial)
 min_cancer = round(min(col.order.TME2$Cancer.Epithelial), 2)
 max_cancer = round(max(col.order.TME2$Cancer.Epithelial), 2)
 scale.cancer = circlize::colorRamp2(seq(min_cancer, max_cancer, length = n.cancer), hcl.colors(n.cancer,"viridis"))
 
-# Scale color for Lymphoid
+## Scale color for Lymphoid
 n.lymphoid = length(col.order.TME2$Lymphoid)
 min_lymphoid = round(min(col.order.TME2$Lymphoid), 2)
 max_lymphoid = round(max(col.order.TME2$Lymphoid), 2)
 scale.lymphoid = circlize::colorRamp2(seq(min_lymphoid, max_lymphoid, length = n.lymphoid), hcl.colors(n.lymphoid,"viridis"))
 
-# Scale color for B cells
+## Scale color for B cells
 n.bcells = length(col.order.TME2$B.cells)
 min_bcells = round(min(col.order.TME2$B.cells), 2)
 max_bcells = round(max(col.order.TME2$B.cells), 2)
 scale.bcells = circlize::colorRamp2(seq(min_bcells, max_bcells, length = n.bcells), hcl.colors(n.bcells,"viridis"))
 
-# Scale color for T cells
+## Scale color for T cells
 n.tcells = length(col.order.TME2$T.cells)
 min_tcells = round(min(col.order.TME2$T.cells), 2)
 max_tcells = round(max(col.order.TME2$T.cells), 2)
 scale.tcells = circlize::colorRamp2(seq(min_tcells, max_tcells, length = n.tcells), hcl.colors(n.tcells,"viridis"))
 
-# Scale color for CAFs
+## Scale color for CAFs
 n.cafs = length(col.order.TME2$CAFs)
 min_cafs = round(min(col.order.TME2$CAFs), 2)
 max_cafs = round(max(col.order.TME2$CAFs), 2)
 scale.cafs = circlize::colorRamp2(seq(min_cafs, max_cafs, length = n.cafs), hcl.colors(n.tcells,"viridis"))
 
-# Scale color for Endothelial
+## Scale color for Endothelial
 n.endothelial = length(col.order.TME2$Endothelial)
 min_endothelial = round(min(col.order.TME2$Endothelial), 2)
 max_endothelial = round(max(col.order.TME2$Endothelial), 2)
 scale.endothelial = circlize::colorRamp2(seq(min_endothelial, max_endothelial, length = n.endothelial), hcl.colors(n.tcells,"viridis"))
 
-# Scale color for Myeloid
+## Scale color for Myeloid
 n.myeloid = length(col.order.TME2$Myeloid)
 min_myeloid = round(min(col.order.TME2$Myeloid), 2)
 max_myeloid = round(max(col.order.TME2$Myeloid), 2)
@@ -333,3 +292,11 @@ png(filename = "./results/plots/TC_TME_analysis/heatmap_TME_TCs_CancerEpith.png"
 draw(heatmap.drugs.TME.cancerepith)
 dev.off()
 
+drugs.matrix.export <- as.data.frame(drugs.matrix.TME2) %>%
+  rownames_to_column("sigs_diff")
+
+write.table(x = drugs.matrix.export,
+            file = "./results/tables/drugs_matrix_TME_CancerEp_ordered.tsv",
+            row.names = FALSE,
+            col.names = TRUE,
+            sep = "\t")
