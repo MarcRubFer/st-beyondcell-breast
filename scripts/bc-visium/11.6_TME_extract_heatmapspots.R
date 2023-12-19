@@ -1,3 +1,12 @@
+
+drugs.matrix.import <- read_tsv(file = "./results/tables/drugs_matrix_TME_CancerEp_ordered.tsv")
+drugs.matrix.import <- as.data.frame(drugs.matrix.import) 
+rownames(drugs.matrix.import) <- drugs.matrix.import$sigs_diff
+
+drugs.matrix.TME2 <- drugs.matrix.import %>%
+  select(-sigs_diff)
+drugs.matrix.TME2 <- as.matrix(drugs.matrix.TME2)
+dim(drugs.matrix.TME2)
 # Draw Heatmap
 heatmap.drugs.TME.cancerepith2 <- Heatmap(
   drugs.matrix.TME2,
@@ -135,19 +144,7 @@ bc.TLS <- bcSubset(bc.TLS, nan.cells = 0.95)
 bc.TLS@normalized[is.na(bc.TLS@normalized)] <- 0
 bc.TLS.recomputed <- bcRecompute(bc.TLS, slot = "normalized")
 
-res <- c(0.1, 0.2, 0.3, 0.4, 0.5)
 
-## NO FUNCIONA ##
-bc.TLS.recomputed <- bcUMAP(bc.TLS.recomputed, 
-                        pc = 10, 
-                        k.neighbors = 20, 
-                        res = 0.3)
-head(bc.TLS.recomputed@meta.data)
-dim(bc.TLS.recomputed@meta.data)
-?bcMerge
-
-bc.merged <- bcMerge(bc1 = bc.ranked.TME, bc2 = bc.TLS.recomputed, keep.bc.clusters = TRUE)
-bcSignatures(bc.TLS.recomputed)
 ##
 data <- as.data.frame(t(bc.TLS.recomputed@normalized)) %>%
   rownames_to_column("spot")
@@ -158,8 +155,19 @@ spot.data <- data %>%
 cluster.selec <- cluster.colum %>%
   filter(spot %in% spot.data)
 
-data.merged <- left_join(data, cluster.selec, by = "spot")
+rownames(cluster.selec) <- cluster.selec$spot
+cluster.add <- cluster.selec %>%
+  mutate(spot = NULL)
 
+bc.TLS.recomputed <- bcAddMetadata(bc.TLS.recomputed, metadata = cluster.add)
+spatial.bcScore.TLS <- bcSignatures(bc = bc.TLS.recomputed, UMAP = "Seurat", spatial = T, mfrow = c(2,1), signatures = list(values = "TLS_CABRITA"))
+
+spatial.Bcells <- SpatialFeaturePlot(seurat.TME, features = "B.cells", ncol = 1)
+spatial.Tcells <- SpatialFeaturePlot(seurat.TME, features = "T.cells", ncol = 1)
+
+spatial.bcScore.TLS | spatial.Bcells | spatial.Tcells
+
+data.merged <- left_join(data, cluster.selec, by = "spot")
 data.boxplot <- ggplot(data.merged, aes(x=cluster, y=TLS_CABRITA)) +
   geom_boxplot()
 
@@ -169,3 +177,5 @@ stats.plot <-ggbetweenstats(data = data.merged,
                x = cluster,
                y = TLS_CABRITA)
 extract_stats(stats.plot)
+
+data.boxplot | stats.plot
