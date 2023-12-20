@@ -156,7 +156,7 @@ cluster.add <- cluster.selec %>%
 bc.TLS.recomputed <- bcAddMetadata(bc.TLS.recomputed, metadata = cluster.add)
 bc.TLS.recomputed@meta.data
 
-spatial.bcScore.TLS <- bcSignatures(bc = bc.TLS.recomputed, UMAP = "Seurat", spatial = T, mfrow = c(2,1), signatures = list(values = "TLS_CABRITA"))
+spatial.bcScore.TLS <- bcSignatures(bc = bc.TLS.recomputed, UMAP = "Seurat", spatial = T, mfrow = c(1,2), signatures = list(values = "TLS_CABRITA"))
 
 spatial.Bcells <- SpatialFeaturePlot(seurat.TME, features = "B.cells", ncol = 1)
 spatial.Tcells <- SpatialFeaturePlot(seurat.TME, features = "T.cells", ncol = 1)
