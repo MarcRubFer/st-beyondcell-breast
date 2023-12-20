@@ -42,6 +42,15 @@ heatmap.drugs.TME.cancerepith2 <- Heatmap(
   heatmap_legend_param = list(at = c(drugs.matrix.TME.min, 0, drugs.matrix.TME.max))
 )      
 heatmap.drugs.TME.cancerepith2
+png(filename = "./results/plots/TC_TME_analysis/heatmap_TME_TCs_cluster_columns.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(heatmap.drugs.TME.cancerepith2)
+dev.off()
+
+
 ht = draw(heatmap.drugs.TME.cancerepith2) 
 c.order.list <- column_order(ht)
 c.dend <- column_dend(ht)
@@ -59,36 +68,20 @@ cluster.colum <- lapply(seq_along(c.order.list), FUN = function(index) {
 })
 cluster.colum <- do.call(rbind, cluster.colum)
 
-cluster1 <- cluster.colum %>%
-  filter(cluster == "cluster1") %>%
-  select(spot) %>%
-  pull()
-
 cluster2 <- cluster.colum %>%
   filter(cluster == "cluster2") %>%
   select(spot) %>%
   pull()
 
-cluster3 <- cluster.colum %>%
-  filter(cluster == "cluster3") %>%
-  select(spot) %>%
-  pull()
-
-bc.ranked.TME <- bcUMAP(bc.ranked.TME, 
-                        pc = 10, 
-                        k.neighbors = 20, 
-                        res = 0.3)
-
-cols.highlight <- c("cluster1" = "#4f5be2",
-                    "cluster2" = "#ff802b",
-                    "non.selected" = "#019453")
 
 bcClusters(bc.ranked.TME, 
            idents = "spot.collapse", 
            spatial = T, mfrow = c(1,2), 
-           cells.highlight = list("cluster1" = cluster1,
-                                  "cluster2" = cluster2,
-                                  "cluster3" = cluster3))
+           cells.highlight = list("cluster2" = cluster2))
+bcClusters(bc.ranked.TME, 
+           idents = "spot.collapse", 
+           spatial = T, mfrow = c(1,2))
+
 
 seurat.TME <- readRDS("./results/analysis/seuratobj.TME-TCs.rds")
 
@@ -128,6 +121,7 @@ ht.TLS <- Heatmap(matrix = TLS.norm.data,
         column_names_gp = gpar(fontsize = 3))
 ht.TLS
 
+seurat.TME <- readRDS("./results/analysis/seuratobj.TME-TCs.rds")
 gs.TLS <- GenerateGenesets(x = "./data/gmts/TLS_sig.gmt")
 
 bc.TLS <- bcScore(seurat.TME,
@@ -160,12 +154,29 @@ cluster.add <- cluster.selec %>%
   mutate(spot = NULL)
 
 bc.TLS.recomputed <- bcAddMetadata(bc.TLS.recomputed, metadata = cluster.add)
+bc.TLS.recomputed@meta.data
+
 spatial.bcScore.TLS <- bcSignatures(bc = bc.TLS.recomputed, UMAP = "Seurat", spatial = T, mfrow = c(2,1), signatures = list(values = "TLS_CABRITA"))
 
 spatial.Bcells <- SpatialFeaturePlot(seurat.TME, features = "B.cells", ncol = 1)
 spatial.Tcells <- SpatialFeaturePlot(seurat.TME, features = "T.cells", ncol = 1)
 
 spatial.bcScore.TLS | spatial.Bcells | spatial.Tcells
+
+data.scales <- as.data.frame(t(bc.TLS.recomputed@scaled)) %>%
+  mutate(TLS.spots = case_when(TLS_CABRITA >= 0.4 ~ "TLS",
+                               TRUE ~ NA))
+
+head(data.scales)
+
+bc.TLS.spot <- bcAddMetadata(bc.TLS.recomputed, metadata = data.scales)
+head(bc.TLS.spot@meta.data)
+
+bcClusters(bc = bc.TLS.spot,
+           idents = "TLS.spots",
+           spatial = T,
+           #factor.col = F,
+           mfrow = c(1,2))
 
 data.merged <- left_join(data, cluster.selec, by = "spot")
 data.boxplot <- ggplot(data.merged, aes(x=cluster, y=TLS_CABRITA)) +
@@ -179,3 +190,126 @@ stats.plot <-ggbetweenstats(data = data.merged,
 extract_stats(stats.plot)
 
 data.boxplot | stats.plot
+
+seurat.tcs <- readRDS("./results/analysis/seuratobj.therapeutic.clusters.rds")
+
+TLS.spots <- data.scales %>%
+  select(TLS.spots)
+
+seurat.TLS <- AddMetaData(seurat.tcs, metadata = TLS.spots)
+head(seurat.TLS@meta.data)
+SpatialDimPlot(seurat.TLS, group.by = "TLS.spots")
+
+library(semla)
+# Semla object
+semlaobj <- UpdateSeuratForSemla(seurat.TLS, 
+                                 image_type = "tissue_lowres",
+                                 verbose = T)
+
+# Radial distances
+semlaobj <- RadialDistance(semlaobj, 
+                           column_name = "TLS.spots",
+                           selected_groups = "TLS")
+
+dual.colors <- c(
+  "TUMOUR" = "#c4534e",
+  "TME" = "#098cf0")
+MapLabels(semlaobj, 
+          column_name = "TLS.spots", 
+          override_plot_dims = TRUE, 
+          image_use = NULL, 
+          drop_na = TRUE, 
+          pt_size = 2) +
+  plot_layout(guides = "collect") &
+  theme(legend.position = "right") &
+  #scale_fill_manual(values = dual.colors) &
+  guides(fill = guide_legend(override.aes = list(size = 3), ncol = 2))
+semlaobj@meta.data
+MapFeatures(semlaobj, 
+            features = "r_dist_TLS", 
+            center_zero = TRUE, 
+            pt_size = 2, 
+            colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
+            override_plot_dims = TRUE)
+semlaobj$r_dist_TLS_scaled <- sign(semlaobj$r_dist_TLS)*sqrt(abs(semlaobj$r_dist_TLS))
+MapFeatures(semlaobj, 
+            features = "r_dist_TLS_scaled", 
+            center_zero = TRUE, 
+            pt_size = 1.5, 
+            colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
+            override_plot_dims = TRUE)
+
+bc.allspots <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
+# Transposed enriched matrix
+enrich.matrix <- t(bc.allspots@normalized)
+
+# 
+radial.dist.tumour <- semlaobj@meta.data$r_dist_TLS
+
+# Realizar la prueba de correlación de Pearson entre cada columna de datos y el vector de distancia
+results.cor.pearson <- apply(enrich.matrix, 2, function(col) cor.test(col, radial.dist.tumour, method = "pearson"))
+
+results.df <- data.frame(
+  corr = sapply(results.cor.pearson, function(res) res$estimate),
+  p.value = sapply(results.cor.pearson, function(res) res$p.value)
+)
+
+collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
+collapsed.moas <- as.data.frame(collapsed.moas)
+rownames(collapsed.moas) <- collapsed.moas$top.diff
+names.moas <- levels(factor(collapsed.moas$collapsed.MoAs))
+length.moas <- length(names.moas)
+col.moas <- c("#db4470",
+              "#5cc151",
+              "#9b58cf",
+              "#9bb932",
+              "#5c6fda",
+              "#cca939",
+              "#dd6fd1",
+              "#508f36",
+              "#c83f97",
+              "#63c385",
+              "#8850a1",
+              "#da8b2f",
+              "#5b70b5",
+              "#c45926",
+              "#43c4c4",
+              "#d5433c",
+              "#61a2da",
+              "#926a2e",
+              "#c190d8",
+              "#317341",
+              "#e286a5",
+              "#4a9f7c",
+              "#9c4c77",
+              "#abb061",
+              "#ae5050",
+              "#697329",
+              "#df936d")
+names(col.moas) <- names.moas
+
+subset.moas <- collapsed.moas %>%
+  select(top.diff, preferred.drug.names, collapsed.MoAs)
+
+top.diff <- collapsed.moas$top.diff
+
+results.top.diff <- results.df[top.diff,]
+results.top.diff <- results.top.diff %>%
+  rownames_to_column("top.diff") %>%
+  mutate(top.diff = gsub("\\.cor$", "", top.diff)) 
+
+results.top.diff <- right_join(y=results.top.diff, x=subset.moas, by = "top.diff")
+
+
+results.top.diff.filtered <- results.top.diff %>%
+  filter(p.value < 0.05) %>%
+  arrange(corr)
+
+ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
+  geom_bar(aes(fill = corr), stat = "identity") +
+  scale_fill_gradient2(limits = c(-1,1)) +
+  xlim(-1,1) +
+  labs(fill = "Pearson's correlation") +
+  theme_minimal() + 
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank())
