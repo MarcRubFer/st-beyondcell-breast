@@ -112,3 +112,44 @@ save(all.plots, file = paste0("./results/ggplots/reference/filter_plots.RData"))
 dir.create(path = paste0(out.dir,"/analysis/reference"), recursive = TRUE)
 saveRDS(seuratobj.refHER2.filtered, 
         file = "./results/analysis/reference/seuratobj.refHER2.filtered.rds")
+
+# Figures for suppl figure
+Idents(seuratobj.refHER2) <- "orig.ident"
+Idents(seuratobj.refHER2.filtered) <- "orig.ident"
+vln.mt.before <- customVln(seuratobj.refHER2, features = "Percent_mito") +
+  ggtitle("Mit Pre-filtering") +
+  ylab("Mitochondrial gene (%)")
+vln.mt.after <- customVln(seuratobj.refHER2.filtered, features = "Percent_mito") + 
+  ylim(0,20) +
+  ggtitle("Mit Filtered")
+mit.processing <- ((vln.mt.before | vln.mt.after) + plot_layout(guides = "collect")) & ylim(0,20) 
+ggsave(filename = paste0(out.dir,"/plots/reference/mit_genes.svg"),
+       plot = mit.processing)
+vln.rb.before <- customVln(seuratobj.refHER2, features = "Percent_ribo") +
+  ggtitle("Rib Pre-filtering") +
+  ylab("Ribosomal gene (%)")
+vln.rb.after <- customVln(seuratobj.refHER2.filtered, features = "Percent_ribo") +
+  ylim(0,60) +
+  ggtitle("Rb Filtered")
+rib.processing <- ((vln.rb.before | vln.rb.after) + plot_layout(guides = "collect")) 
+ggsave(filename = paste0(out.dir,"/plots/reference/rib_genes.svg"),
+       plot = rib.processing)
+vln.count.before <- customVln(seuratobj.refHER2, features = "nCount_RNA") +
+  ggtitle("Counts Pre-filtering") +
+  ylab("Num. of counts")
+vln.count.after <- customVln(seuratobj.refHER2.filtered, features = "nCount_RNA") +
+  ylim(0, 150000) +
+  ggtitle("Count Filtered")
+count.processing <- ((vln.count.before | vln.count.after) + plot_layout(guides = "collect")) 
+ggsave(filename = paste0(out.dir,"/plots/reference/counts.svg"),
+       plot = count.processing)
+
+vln.feat.before <- customVln(seuratobj.refHER2, features = "nFeature_RNA") +
+  ggtitle("Features Pre-filtering") +
+  ylab("Num. of features")
+vln.feat.after <- customVln(seuratobj.refHER2.filtered, features = "nFeature_RNA") +
+  ylim(0, 10000) +
+  ggtitle("Feat Filtered")
+feature.processing <- ((vln.feat.before | vln.feat.after) + plot_layout(guides = "collect")) 
+ggsave(filename = paste0(out.dir,"/plots/reference/features.svg"),
+       plot = feature.processing)

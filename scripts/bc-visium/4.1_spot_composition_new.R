@@ -129,7 +129,7 @@ boxp.props
 # Load UMAP plots from integrated reference
 load("./results/ggplots/reference/integrated_plots.RData")
 
-dimplot.celltype.integrated <- all.plots.integrated[[1]] + ggtitle(label = NULL) + NoLegend()
+dimplot.celltype.integrated <- all.plots.integrated[[3]] + ggtitle(label = NULL)
 
 spatial.distrib.spotcomp <- SpatialDimPlot(seuratobj.spotcomp, group.by = "spot.collapse", cols = colors) + plot_layout(guides = "collect") &
   guides(fill = guide_legend(title = "Categories"))
@@ -149,3 +149,17 @@ ggsave(filename = "Figure1.svg",
 
 # Save data
 saveRDS(seuratobj.spotcomp, file = "./results/analysis/seuratobj.spotcomp.rds")
+
+# Save images as .svg for figure
+ggsave(filename = "UMAP_reference.svg",
+       plot = dimplot.celltype.integrated,
+       path = "./results/plots/spot_composition/")
+ggsave(filename = "boxplot_distrib_celltypes.svg",
+       plot = boxp.props,
+       path = "./results/plots/spot_composition/")
+ggsave(filename = "num_spots.svg",
+       plot = num.spots,
+       path = "./results/plots/spot_composition/")
+ggsave(filename = "spatial_distribution_spotcomp.svg",
+       plot = spatial.distrib.spotcomp,
+       path = "./results/plots/spot_composition/")

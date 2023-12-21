@@ -43,7 +43,7 @@ seuratobj.spotcomp <- RunPCA(seuratobj.spotcomp,
                                  npcs = 50, 
                                  features = VariableFeatures(seuratobj.spotcomp))
 
-dim.pre.slide.regress <- DimPlot(seuratobj.spotcomp) +
+dim.pre.slide.regress <- DimPlot(seuratobj.spotcomp, pt.size = 0.5) +
   ggtitle("DimPlot without slide regression")
 
 # Regression by slide (orig.ident)
@@ -58,11 +58,14 @@ seuratobj.slideregress <- RunPCA(seuratobj.slideregress,
                                  assay = "SCT", 
                                  npcs = 50, features = VariableFeatures(seuratobj.slideregress))
 
-dim.with.slide.regress <- DimPlot(seuratobj.slideregress) +
-  ggtitle("DimPlot slide regressed")
+dim.with.slide.regress <- DimPlot(seuratobj.slideregress, pt.size = 0.5) +
+  ggtitle("DimPlot slide regressed") 
 
-patch.slide.regress <- dim.pre.slide.regress | dim.with.slide.regress
-
+patch.slide.regress <- (dim.pre.slide.regress | dim.with.slide.regress) + plot_layout(guides = "collect")
+patch.slide.regress
+ggsave(filename = "patch_slide_regress.svg", 
+       plot = patch.slide.regress, 
+       path = paste0(out.dir,"/plots/SCT_cellcycle"))
 
 # Cell cycle effect
 g2m.genes <- cc.genes$g2m.genes
@@ -94,7 +97,9 @@ AAACCC
 patch.cell.cycle.without <- cell.cycle.without + cell.cycle.phase.without + wrap_plots(cell.cycle.slide.without) +
   plot_layout(design = layout) +
   plot_annotation(title = "No cell cycle regression")
-
+ggsave(filename = "cell_cycle_withoutregress.svg", 
+       plot = patch.cell.cycle.without, 
+       path = "./results/plots/SCT_cellcycle/")
 
 
 head(seuratobj.phase@meta.data)
@@ -135,6 +140,11 @@ cell.cycle.slide.with <- CellCyclebyIdent(seuratobj.phase,
 patch.cell.cycle.with <- cell.cycle.with + cell.cycle.phase.with + wrap_plots(cell.cycle.slide.with) +
   plot_layout(design = layout) +
   plot_annotation(title = "Cycle regression")
+
+ggsave(filename = "cell_cycle_regressed.svg", 
+       plot = patch.cell.cycle.with, 
+       path = "./results/plots/SCT_cellcycle/")
+
 SpatialDimPlot(seuratobj.phase)
 
 ## Alternative regression

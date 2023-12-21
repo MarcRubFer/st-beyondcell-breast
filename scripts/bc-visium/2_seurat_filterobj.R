@@ -99,6 +99,8 @@ sf.feat.after <- SpatialFeaturePlot(seuratobj.filtered, features = "nFeature_Spa
 post.spatial <- (sf.mt.after | sf.rb.after ) / (sf.count.after | sf.feat.after) 
 post.spatial
 
+
+
 # Save data
 dir.create(path = paste0(out.dir,"/analysis"), recursive = TRUE)
 saveRDS(seuratobj.filtered, file = "./results/analysis/seuratobj.filtered.rds")
@@ -117,3 +119,25 @@ ggsave(filename = paste0(out.dir,"/plots/filtering/patch.postfiltering.spatial.p
 dir.create(path = paste0(out.dir,"/ggplots"), recursive = TRUE)
 all.plots <- list(pre.violin, pre.spatial, post.violin, post.spatial)
 save(all.plots, file = paste0("./results/ggplots/filter_plots.RData"))
+
+# Plots for supplemental figure
+vln.mt.before <- vln.mt.before +
+  ylab("Mitochondrial gene (%)")
+mit.processing <- ((vln.mt.before | vln.mt.after) + plot_layout(guides = "collect")) & ylim(0,20) 
+ggsave(filename = paste0(out.dir,"/plots/filtering/mit.genes.svg"),
+       plot = mit.processing)
+vln.rb.before <- vln.rb.before +
+  ylab("Ribosomal gene (%)")
+rib.processing <- ((vln.rb.before | vln.rb.after) + plot_layout(guides = "collect")) & ylim(0,40) 
+ggsave(filename = paste0(out.dir,"/plots/filtering/rib.genes.svg"),
+       plot = rib.processing)
+vln.count.before <- vln.count.before +
+  ylab("Num. of counts")
+count.processing <- ((vln.count.before | vln.count.after) + plot_layout(guides = "collect")) & ylim(0,100000) 
+ggsave(filename = paste0(out.dir,"/plots/filtering/counts.svg"),
+       plot = count.processing)
+vln.feat.before <- vln.feat.before +
+  ylab("Num. of features")
+feature.processing <- ((vln.feat.before | vln.feat.after) + plot_layout(guides = "collect")) & ylim(0,12000) 
+ggsave(filename = paste0(out.dir,"/plots/filtering/features.svg"),
+       plot = feature.processing)

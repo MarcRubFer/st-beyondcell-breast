@@ -51,11 +51,26 @@ names(df.celltypes)
 patientid <- gsub(pattern = "_.*", replacement = "", names(reference@cell_types))
 df.celltypes$patientid <- patientid
 
+cell.colors.reference <- c("B-cells" = "cornflowerblue",
+                           "CAFs" = "goldenrod2",
+                           "Cancer Epithelial" = "red3",
+                           "Endothelial" = "seagreen4",
+                           "Myeloid" = "darkorchid",
+                           "Normal Epithelial" = "hotpink",
+                           "Plasmablasts" = "greenyellow",
+                           "PVL" = "darkorange1",
+                           "T-cells" = "steelblue4")
+
 ncells_patients <- ggplot(data = df.celltypes, aes(x=patientid)) +
   geom_bar(aes(fill = cell_types), colour = "#333333") +
   ggtitle(paste("Number of cell types / Distribution by patients")) +
-  scale_fill_igv() +
-  theme(axis.title.x = element_blank())
+  scale_fill_manual(values = cell.colors.reference) +
+  labs(fill = "Cell type") +
+  theme_minimal() +
+  theme(axis.title.x = element_blank(),
+        axis.line.x = element_line(colour = "#20302f"),
+        axis.line.y = element_line(colour = "black"))
+ncells_patients
 
 ncells_patients_wrap <- ggplot(data = as.data.frame(table(df.celltypes)), 
                                aes(x = patientid, y = Freq)) +
@@ -63,31 +78,51 @@ ncells_patients_wrap <- ggplot(data = as.data.frame(table(df.celltypes)),
            position = position_dodge(), 
            color = "black") +
   facet_wrap(~cell_types) +
-  scale_fill_igv()
-
+  scale_fill_manual(values = cell.colors.reference) 
+  
 ncells_patients_wrap.2 <- ggplot(data = as.data.frame(table(df.celltypes)), 
        aes(x = cell_types, y = Freq)) +
   geom_col(aes(fill = cell_types), 
            position = position_dodge(), 
            color = "black") +
   facet_wrap(~patientid) +
-  scale_fill_igv() +
+  scale_fill_manual(values = cell.colors.reference) +
+  theme_bw() +
   theme(axis.title.x = element_blank(),
         axis.text.x = element_blank(),
         axis.ticks.x = element_blank(),
+        panel.grid = element_blank(),
         legend.position = c(0.85,0.25))
+ncells_patients_wrap.2
 
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/reference"), recursive = TRUE)
 ggsave(filename = "reference.ncells_by_patients.png", 
        plot = ncells_patients, 
        path = paste0(out.dir,"/plots/reference"))
+ggsave(filename = "reference.ncells_by_patients.svg", 
+       plot = ncells_patients, 
+       path = paste0(out.dir,"/plots/reference"))
 ggsave(filename = "reference.ncells_by_patients_wrap.png", 
+       plot = ncells_patients_wrap, 
+       path = paste0(out.dir,"/plots/reference"))
+ggsave(filename = "reference.ncells_by_patients_wrap.svg", 
        plot = ncells_patients_wrap, 
        path = paste0(out.dir,"/plots/reference"))
 ggsave(filename = "reference.ncells_by_patients_wrap_2.png", 
        plot = ncells_patients_wrap.2, 
        path = paste0(out.dir,"/plots/reference"))
+ggsave(filename = "reference.ncells_by_patients_wrap_2.svg", 
+       plot = ncells_patients_wrap.2, 
+       path = paste0(out.dir,"/plots/reference"))
+ggsave(filename = "reference.ncells_by_patients_wrap_2.pdf", 
+       plot = ncells_patients_wrap.2, 
+       path = paste0(out.dir,"/plots/reference"))
+
+
+pdf(file = "./results/plots/reference/reference.ncells_by_patients_wrap_2.pdf")
+ncells_patients_wrap.2
+dev.off()
 
 dir.create(path = paste0(out.dir,"/ggplots/reference"), recursive = TRUE)
 all.plots <- list(ncells_patients, ncells_patients_wrap, ncells_patients_wrap.2)
