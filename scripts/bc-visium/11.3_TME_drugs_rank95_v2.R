@@ -133,6 +133,12 @@ col.order.TME2 <- bc.ranked.TME@meta.data %>%
   mutate(Lymphoid = round(B.cells + T.cells, 2)) %>%
   arrange(TCs_res.0.3,Cancer.Epithelial)
 
+# Save ordered data.frame
+write.table(x = col.order.TME2, 
+            file = "./results/tables/dataframe_column_ordered_TME.tsv", 
+            sep = "\t",
+            row.names = F)
+
 # Extract order spots from arranged data.frame
 col.order.spots.tme2 <- col.order.TME2  %>%
   rownames_to_column("spots") %>%
@@ -191,6 +197,11 @@ TC2.sensitivity <- top.diff.TME.df %>%
 collapsed.moas.TME <- collapsed.moas.TME %>%
   left_join(TC1.sensitivity, by = join_by(top.diff)) %>%
   left_join(TC2.sensitivity,by = join_by(top.diff)) 
+
+write.table(x = collapsed.moas.TME, 
+            file = "./results/tables/top.differential.drugs.TCs.TME_sensitivity.tsv", 
+            sep = "\t",
+            row.names = F)
 
 head(collapsed.moas.TME)
 col.sensitivity <- c("HighSensitivity" = "yellow",

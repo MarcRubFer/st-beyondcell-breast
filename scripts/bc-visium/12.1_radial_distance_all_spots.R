@@ -21,29 +21,37 @@ set.seed(1)
 seuratobj.tcs <- readRDS(file = "./results/analysis/seuratobj.therapeutic.clusters.rds")
 bc.allspots <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
 
-# Semla object
+# Create a Semla object from Seurat object
 semlaobj <- UpdateSeuratForSemla(seuratobj.tcs, 
                                  image_type = "tissue_lowres",
                                  verbose = T)
 
-# Radial distances
+# Calculate Radial distances 
 semlaobj <- RadialDistance(semlaobj, 
                            column_name = "spot.dual",
                            selected_groups = "TUMOUR")
 
+# Set dual colors Tumour/TME
 dual.colors <- c(
   "TUMOUR" = "#c4534e",
   "TME" = "#098cf0")
-MapLabels(semlaobj, 
-          column_name = "spot.dual", 
-          override_plot_dims = TRUE, 
-          image_use = NULL, 
-          drop_na = TRUE, 
-          pt_size = 2) +
+
+# Plot distribution of Tumour TME
+tumour.tme.spots <- MapLabels(semlaobj, 
+                              column_name = "spot.dual", 
+                              override_plot_dims = TRUE, 
+                              image_use = NULL, 
+                              drop_na = TRUE, 
+                              pt_size = 2) +
   plot_layout(guides = "collect") &
   theme(legend.position = "right") &
   scale_fill_manual(values = dual.colors) &
   guides(fill = guide_legend(override.aes = list(size = 3), ncol = 2))
+
+ggsave(filename = "tumour_tme_spots.svg",
+       plot = tumour.tme.spots,
+       path = "./results/plots/distances/",
+       scale = 0.5)
 
 semlaobj@meta.data
 
@@ -54,13 +62,16 @@ MapFeatures(semlaobj,
             colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
             override_plot_dims = TRUE)
 semlaobj$r_dist_TUMOUR_scaled <- sign(semlaobj$r_dist_TUMOUR)*sqrt(abs(semlaobj$r_dist_TUMOUR))
-MapFeatures(semlaobj, 
-            features = "r_dist_TUMOUR_scaled", 
-            center_zero = TRUE, 
-            pt_size = 2, 
-            colors = RColorBrewer::brewer.pal(n = 11, name = "Spectral") |> rev(),
-            override_plot_dims = TRUE)
-
+radial.dist <- MapFeatures(semlaobj, 
+                           features = "r_dist_TUMOUR_scaled", 
+                           center_zero = TRUE, 
+                           pt_size = 2, 
+                           colors = RColorBrewer::brewer.pal(n = 11, name = "Spectral") |> rev(),
+                           override_plot_dims = TRUE)
+ggsave(filename = "radial_dist.svg",
+       plot = radial.dist,
+       path = "./results/plots/distances/",
+       scale = 0.5)
 
 r.dist <- semlaobj@meta.data$r_dist_TUMOUR_scaled
 zebularine <- bc.allspots@normalized["zebularine_CTRP_A01145011", ]
@@ -132,7 +143,7 @@ results.top.diff.filtered <- results.top.diff %>%
   filter(p.value < 0.05) %>%
   arrange(corr)
 
-ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
+correlation.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
   geom_bar(aes(fill = corr), stat = "identity") +
   scale_fill_gradient2(limits = c(-1,1)) +
   xlim(-1,1) +
@@ -140,3 +151,24 @@ ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, co
   theme_minimal() + 
   theme(panel.grid.minor.x = element_blank(),
         panel.grid.major.y = element_blank())
+
+ggsave(filename = "correlation_plot.svg",
+       plot = correlation.plot,
+       path = "./results/plots/distances/")
+
+top1_corr_up <- bcSignatures(bc.allspots, spatial = T, mfrow = c(1,2), signatures = list(values = "BRD-K75009076-001-02-1_PRISM_K75009076"))
+ggsave(filename = "SCH-900776_signature.svg",
+       plot = top1_corr_up,
+       path = "./results/plots/distances/")
+top2_dasatinib <- bcSignatures(bc.allspots, spatial = T, mfrow = c(1,2), signatures = list(values = "Dasatinib_GDSC_1079"))
+ggsave(filename = "Dasatinib_signature.svg",
+       plot = top2_dasatinib,
+       path = "./results/plots/distances/")
+top_compound7d <- bcSignatures(bc.allspots, spatial = T, mfrow = c(1,2), signatures = list(values = "Compound 7d-cis_CTRP_K61829047"))
+ggsave(filename = "Compound7d_sig.svg",
+       plot = top_compound7d,
+       path = "./results/plots/distances/")
+top_le135 <- bcSignatures(bc.allspots, spatial = T, mfrow = c(1,2), signatures = list(values = "LE-135_PRISM_K06593056"))
+ggsave(filename = "LE-135_sig.svg",
+       plot = top_le135,
+       path = "./results/plots/distances/")
