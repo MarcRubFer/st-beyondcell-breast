@@ -278,27 +278,57 @@ figure <- left.panels | right.panel
 ggsave(filename = "clustree.png",
        plot = clustree.plot,
        path = "./results/plots/clustering/")
+ggsave(filename = "clustree.svg",
+       plot = clustree.plot,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "sankeydiagram_res_0.2.png",
        plot = sankey.scSHC,
        path = "./results/plots/clustering/")
+ggsave(filename = "sankeydiagram_res_0.2.svg",
+       plot = sankey.scSHC,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "clustree_sankey.png",
        plot = clustree.sankey,
        path = "./results/plots/clustering/")
+
+
 ggsave(filename = "dimplot_clusters_res_0.2.png",
        plot = dim.clusters,
        path = "./results/plots/clustering/")
+ggsave(filename = "dimplot_clusters_res_0.2.svg",
+       plot = dim.clusters,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "spatialdimplot_clusters_res.0.2.png",
        plot = spatial.clusters,
        path = "./results/plots/clustering/")
+ggsave(filename = "spatialdimplot_clusters_res.0.2.svg",
+       plot = spatial.clusters,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "barplot_clusters_celltypes.png",
        plot = barplot.celltypes.clusters,
        path = "./results/plots/clustering/")
+ggsave(filename = "barplot_clusters_celltypes.svg",
+       plot = barplot.celltypes.clusters,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "dimplot_Tumor_TME.png",
        plot = dim.dual,
        path = "./results/plots/clustering/")
+ggsave(filename = "dimplot_Tumor_TME.svg",
+       plot = dim.dual,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "spatialdimplot_tumor_tme.png",
        plot = spatial.dual,
        path = "./results/plots/clustering/")
+ggsave(filename = "spatialdimplot_tumor_tme.svg",
+       plot = spatial.dual,
+       path = "./results/plots/clustering/")
+
 ggsave(filename = "figure_clustering.png",
        plot = figure,
        path = "./results/plots/clustering/")
