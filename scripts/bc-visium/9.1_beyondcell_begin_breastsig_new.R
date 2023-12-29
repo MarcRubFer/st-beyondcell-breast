@@ -315,8 +315,8 @@ ECs.spatial <- bcClusters(bc.recomputed, UMAP = "beyondcell", idents = "ECs_res.
 ECs.spatial <- lapply(ECs.spatial, function(i){
   i + scale_fill_manual(values = ECs.colors)
 })
-ECs.spatial <- wrap_plots(d, ncol = 1, nrow = 2) 
-ECs.spatial <- d + plot_layout(guides = "collect")
+ECs.spatial <- wrap_plots(ECs.spatial, ncol = 1, nrow = 2) 
+ECs.spatial <- ECs.spatial + plot_layout(guides = "collect")
 
 upper <- plot_grid(bc.clusters, plot_grid(bc.phases,bc.dual, ncol = 1, labels = c("B","C")), spatial.bc.clusters, nrow = 1, rel_widths = c(1,0.7,1), labels = c("A","","D"))
 bottom <- plot_grid(bc.clusters.seurat, ECs.spatial, ECs.TCs, barplot.celltypes.TCs, nrow = 1, labels = c("E","F","G","H"), rel_widths = c(1.3,1,1,1.5))
@@ -324,9 +324,19 @@ bottom <- plot_grid(bc.clusters.seurat, ECs.spatial, ECs.TCs, barplot.celltypes.
 figure <- plot_grid(upper,NULL, bottom, ncol = 1, rel_heights = c(1,0.15,1))
 figure
 
+upper <- plot_grid(bc.clusters, bc.dual, spatial.bc.clusters, nrow = 1, rel_widths = c(1,1,1), labels = c("A","B","C"))
+bottom <- plot_grid(bc.clusters.seurat, ECs.spatial, ECs.TCs, barplot.celltypes.TCs, nrow = 1, labels = c("D","E","F","G"), rel_widths = c(1.3,1,1,1.5))
+
+figure <- plot_grid(upper,NULL, bottom, ncol = 1, rel_heights = c(1,0.15,1))
+figure
+
 ggsave(filename = "figure.png",
        plot = figure,
        path = "./results/plots/Beyondcell_oct23_breastsig/")
+ggsave(filename = "figure.svg",
+       plot = figure,
+       path = "./results/plots/Beyondcell_oct23_breastsig/")
+
 # Save plots and ggplots
 dir.create(path = paste0(out.dir,"/plots/beyondcell_create"), recursive = TRUE)
 
