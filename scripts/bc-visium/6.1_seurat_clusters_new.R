@@ -332,6 +332,9 @@ ggsave(filename = "spatialdimplot_tumor_tme.svg",
 ggsave(filename = "figure_clustering.png",
        plot = figure,
        path = "./results/plots/clustering/")
+ggsave(filename = "figure_clustering.svg",
+       plot = figure,
+       path = "./results/plots/clustering/")
 
 all.plots <- list(clustree.plot,sankey.scSHC,clustree.sankey,dim.clusters,
                   spatial.clusters,barplot.celltypes.clusters,dim.dual,
