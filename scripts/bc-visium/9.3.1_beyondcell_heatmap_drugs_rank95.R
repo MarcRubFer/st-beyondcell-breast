@@ -357,10 +357,15 @@ heatmap.drugs.cancer <- draw(heatmap.drugs.cancer, merge_legend = TRUE)
 heatmap.drugs.cancer
 
 dir.create(path = "./results/plots/Beyondcell_oct23_DrugRank")
-png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Heatmap_DrugRank95.png",
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Heatmap_DrugRank95_2.png",
     width = 48,
     height = 24,
     units = "cm",
     res = 320)
+draw(heatmap.drugs.cancer)
+dev.off()
+svg(filename = "./results/plots/Beyondcell_oct23_DrugRank/Heatmap_DrugRank95_2.svg",
+    width = 48,
+    height = 24)
 draw(heatmap.drugs.cancer)
 dev.off()

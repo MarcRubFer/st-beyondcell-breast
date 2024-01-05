@@ -145,6 +145,9 @@ figure
 ggsave(filename = "halmarks_bubbleheatmap.png",
        plot = hallmarks.plot,
        path = "./results/plots/Beyondcell_oct23_GSEA/")
+ggsave(filename = "halmarks_bubbleheatmap.svg",
+       plot = hallmarks.plot,
+       path = "./results/plots/Beyondcell_oct23_GSEA/")
 ggsave(filename = "reactome_bubbleheatmap.png",
        plot = reactome.plot,
        path = "./results/plots/Beyondcell_oct23_GSEA/")

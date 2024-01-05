@@ -166,6 +166,9 @@ dir.create(path = out.dir.plots, recursive = TRUE)
 ggsave(filename = "hallmarks_bubbleheatmap.png",
        plot = hallmarks.plot,
        path = out.dir.plots)
+ggsave(filename = "hallmarks_bubbleheatmap.svg",
+       plot = hallmarks.plot,
+       path = out.dir.plots)
 
 ##############################################################################
 # fGSEA for myc

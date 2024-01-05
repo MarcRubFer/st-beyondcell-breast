@@ -321,12 +321,16 @@ MapFeatures(semlaobj,
             override_plot_dims = TRUE)
 
 semlaobj$r_dist_TLS_scaled <- sign(semlaobj$r_dist_TLS)*sqrt(abs(semlaobj$r_dist_TLS))
-MapFeatures(semlaobj, 
+r_dist_TLS_scaled <- MapFeatures(semlaobj, 
             features = "r_dist_TLS_scaled", 
             center_zero = TRUE, 
             pt_size = 1.5, 
             colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
             override_plot_dims = TRUE)
+ggsave(filename = "r_dist_TLS_scaled.svg",
+       plot = r_dist_TLS_scaled,
+       path = "./results/plots/TC_TME_analysis/")
+
 
 bc.allspots <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
 # Transposed enriched matrix
@@ -363,7 +367,7 @@ results.top.diff.filtered <- results.top.diff %>%
   filter(p.value < 0.05) %>%
   arrange(corr)
 
-ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
+corr.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
   geom_bar(aes(fill = corr), stat = "identity") +
   scale_fill_gradient2(limits = c(-1,1)) +
   xlim(-1,1) +
@@ -371,5 +375,15 @@ ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, co
   theme_minimal() + 
   theme(panel.grid.minor.x = element_blank(),
         panel.grid.major.y = element_blank())
+ggsave(filename = "corr.plot.svg",
+       plot = corr.plot,
+       path = "./results/plots/TC_TME_analysis/")
 
-bcSignatures(bc.allspots, spatial = T, mfrow = c(2,2), signatures = list(values = c("YM-155_PRISM_K76703230")))
+YM155 <- bcSignatures(bc.allspots, spatial = T, mfrow = c(2,2), signatures = list(values = c("YM-155_PRISM_K76703230")))
+ggsave(filename = "YM155.svg",
+       plot = YM155,
+       path = "./results/plots/TC_TME_analysis/")
+AM580 <- bcSignatures(bc.allspots, spatial = T, mfrow = c(2,2), signatures = list(values = c("AM-580_PRISM_K06854232")))
+ggsave(filename = "AM580.svg",
+       plot = AM580,
+       path = "./results/plots/TC_TME_analysis/")
