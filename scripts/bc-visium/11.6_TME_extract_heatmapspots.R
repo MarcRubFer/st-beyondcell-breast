@@ -146,6 +146,7 @@ svg(filename = "./results/plots/TC_TME_analysis/heatmap_TME_TCs_cluster_columns.
 draw(heatmap.drugs.TME.cancerepith2)
 dev.off()
 
+# Extract the order of new clustered columns
 ht = draw(heatmap.drugs.TME.cancerepith2) 
 c.order.list <- column_order(ht)
 c.dend <- column_dend(ht)
@@ -163,11 +164,13 @@ cluster.colum <- lapply(seq_along(c.order.list), FUN = function(index) {
 })
 cluster.colum <- do.call(rbind, cluster.colum)
 
+# Extract spots ID for cluster 2 
 cluster2 <- cluster.colum %>%
   filter(cluster == "cluster2") %>%
   select(spot) %>%
   pull()
 
+# Plot the position of cluster 2 in the beyondcell object
 bc.ranked.TME <- readRDS("./results/analysis/bc_ranked_TME.rds")
 cluster2.position <- bcClusters(bc.ranked.TME, 
                                 idents = "spot.collapse", 
@@ -178,6 +181,7 @@ ggsave(filename = "cluster2_position.svg",
        path = "./results/plots/TC_TME_analysis/")
 
 
+# Plot B.cells and T.cells proportions
 bcells.prop <- bcClusters(bc.ranked.TME, 
                           idents = "B.cells", 
                           spatial = T, mfrow = c(2,1),
@@ -193,8 +197,10 @@ ggsave(filename = "patch_proportions.svg",
        plot = patch.proportions,
        path = "./results/plots/TC_TME_analysis/")
 
-# Analysis of tertiary-lymphocyte structure (TLS) signature
+# Note: The colocation of B.cells and T.cells could correspond with a immune structure
+# named TLS. We are going to test if this hypothesis is true.
 
+# Analysis of tertiary-lymphocyte structure (TLS) signature
 seurat.tcs <- readRDS("./results/analysis/backup/seuratobj.therapeutic.clusters.rds")
 
 # Signature from Cabrita et al. 2020 (DOI: https://doi.org/10.1038/s41586-019-1914-8)
@@ -213,6 +219,7 @@ colorscale <- function(n = 100, rev = TRUE) {
   return(colors(n = n))
 }
 
+# Plot expression profiles for TLS genes
 TLS.expression.scaled <- lapply(X = seq_along(TLS.expression), FUN = function(index){
   TLS.expression[[index]] +
     scale_fill_gradientn(colours = colorscale(n = 100),
@@ -250,13 +257,14 @@ ggsave(filename = "bcScore_TLS_allspots.svg",
        spatial.bcScore.TLS,
        path = "./results/plots/TC_TME_analysis/")
 
-##
+# Categorized spots in function of TLS enrichment score. We used 0.4 as threshold.
 TLS.spots <- as.data.frame(t(bc.TLS.recomputed@scaled)) %>%
   mutate(TLS.spots = case_when(TLS_CABRITA >= 0.4 ~ "TLS",
                                TRUE ~ NA))
 
 head(TLS.spots)
 head(bc.TLS.recomputed@meta.data)
+# Add metadata to object
 bc.TLS.spot <- bcAddMetadata(bc.TLS.recomputed, metadata = TLS.spots)
 head(bc.TLS.spot@meta.data)
 
@@ -267,10 +275,8 @@ bcClusters(bc = bc.TLS.spot,
            mfrow = c(1,2))
 
 
+
 seurat.tcs <- readRDS("./results/analysis/seuratobj.therapeutic.clusters.rds")
-
-
-
 seurat.TLS <- AddMetaData(seurat.tcs, metadata = TLS.spots)
 head(seurat.TLS@meta.data)
 SpatialDimPlot(seurat.TLS, group.by = "TLS.spots")
@@ -284,15 +290,22 @@ semlaobj <- UpdateSeuratForSemla(seurat.TLS,
 semlaobj <- LoadImages(semlaobj)
 semlaobj <- DisconnectRegions(semlaobj, column_name = "TLS.spots", selected_groups = "TLS")
 semlaobj@tools
-MapLabels(semlaobj, 
-          column_name = "TLS_split", 
-          override_plot_dims = TRUE, 
-          image_use = "raw", 
-          drop_na = TRUE, pt_size = 2) +
+disconnect.regions <- MapLabels(semlaobj, 
+                                column_name = "TLS_split", 
+                                override_plot_dims = TRUE, 
+                                image_use = "raw", 
+                                drop_na = TRUE, pt_size = 2) +
   plot_layout(guides = "collect") &
   theme(legend.position = "right") &
   guides(fill = guide_legend(override.aes = list(size = 3), ncol = 2))
+ggsave(filename = "discon_region_TLS.png",
+       plot = disconnect.regions,
+       path = "./results/plots/TC_TME_analysis/")
+ggsave(filename = "discon_region_TLS.svg",
+       plot = disconnect.regions,
+       path = "./results/plots/TC_TME_analysis/")
 
+# Recategorize principal splitted region as TLS spots to analyze
 semlaobj$TLS_split2 <- case_when(semlaobj$TLS_split == "S1_region1" | semlaobj$TLS_split == "S2_region1" ~ "TLS",
                                  TRUE ~ NA)
 
@@ -301,7 +314,7 @@ semlaobj <- RadialDistance(semlaobj,
                            column_name = "TLS_split2",
                            selected_groups = "TLS")
 
-MapLabels(semlaobj, 
+recat.TLS.spots <- MapLabels(semlaobj, 
           column_name = "TLS_split2", 
           override_plot_dims = TRUE, 
           image_use = "raw", 
@@ -311,6 +324,13 @@ MapLabels(semlaobj,
   theme(legend.position = "right") &
   #scale_fill_manual(values = dual.colors) &
   guides(fill = guide_legend(override.aes = list(size = 3), ncol = 2))
+ggsave(filename = "recat.TLS.spots.png",
+       plot = recat.TLS.spots,
+       path = "./results/plots/TC_TME_analysis/")
+ggsave(filename = "recat.TLS.spots.svg",
+       plot = recat.TLS.spots,
+       path = "./results/plots/TC_TME_analysis/")
+
 semlaobj@meta.data
 
 MapFeatures(semlaobj, 
@@ -320,6 +340,7 @@ MapFeatures(semlaobj,
             colors = RColorBrewer::brewer.pal(n = 11, name = "RdBu") |> rev(),
             override_plot_dims = TRUE)
 
+# Transform distance with square root
 semlaobj$r_dist_TLS_scaled <- sign(semlaobj$r_dist_TLS)*sqrt(abs(semlaobj$r_dist_TLS))
 r_dist_TLS_scaled <- MapFeatures(semlaobj, 
             features = "r_dist_TLS_scaled", 
@@ -332,6 +353,7 @@ ggsave(filename = "r_dist_TLS_scaled.svg",
        path = "./results/plots/TC_TME_analysis/")
 
 
+# Analyze the possible correlation between radial distance to TLS and drug BCS all spots.
 bc.allspots <- readRDS(file = "./results/analysis/beyondcell_allspots_breastsignature.rds")
 # Transposed enriched matrix
 enrich.matrix <- t(bc.allspots@normalized)
