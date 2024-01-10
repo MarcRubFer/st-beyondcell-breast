@@ -122,13 +122,16 @@ write.table(stats.TCs.global,
             file = "./results/tables/table_correlation_drugs_enrichment_global.tsv",
             sep = "\t")
 
+stats.TCs.global <- stats.TCs.global %>%
+  mutate(p.adj = p.adjust(p.value, method = "BH"))
 
 stats.split.list <- lapply(seq_along(TCs), function(index){
   split <- stats.TCs.global %>%
     filter(TC == TCs[index]) %>%
-    select(drug, estimate, p.value) %>%
+    select(drug, estimate, p.value, p.adj) %>%
     rename_with(.fn = ~paste0("estimate.",TCs[index]), .cols = estimate) %>%
     rename_with(.fn = ~paste0("p.value.",TCs[index]), .cols = p.value) %>%
+    rename_with(.fn = ~paste0("p.adj.",TCs[index]), .cols = p.adj) %>%
     mutate(drug = NULL)
 })
 stats.split.merged <- do.call(cbind,stats.split.list)
@@ -142,17 +145,24 @@ matrix.cor <- stats.split.merged %>%
 
 # Create annotations for p-values
 
-pvalue_col_fun = colorRamp2(c(0, 2, 3), c("white", "white", "yellow")) 
-p.value.df <- stats.split.merged %>%
-  select(all_of(starts_with("p.value")))
+pvalue_col_fun = colorRamp2(c(0, -log10(0.05), -log10(0.01)), c("white", "white", "yellow")) 
+#pvalue_col_fun = colorRamp2(breaks = c(0, -log10(0.05), -log10(0.01)), 
+#                            hcl_palette = "YlOrBr")
+#                            ,
+#                            c("white", "yellow", "orange")) 
+pvalue_col_fun = colorRamp2(c(0, -log10(0.05), -log10(0.01)), c("green", "white", "red"))
+pvalue_col_fun = colorRamp2(c(0, -log10(0.05), -log10(0.01), -log10(0.001)), hcl_palette = "Purp", reverse = F)
+
+p.adj.df <- stats.split.merged %>%
+  select(all_of(starts_with("p.adj")))
 
 # Create a list with contain significance of p.values and named
 list.pvalue <- lapply(c(1:6), function(x){
-  p.value <- p.value.df[,x]
-  is_sig = p.value < 0.01
-  pch = rep("*", length(p.value))
+  p.adj <- p.adj.df[,x]
+  is_sig = p.adj < 0.05
+  pch = rep("*", length(p.adj))
   pch[!is_sig] = NA
-  l <- list(p.value = p.value,
+  l <- list(p.adj = p.adj,
             pch = pch)
   return(l)
 })
@@ -187,22 +197,22 @@ ht <- Heatmap(
   top_annotation = HeatmapAnnotation(TC = TCs,
                                      col = list("TC" = TC.colors)),
   right_annotation = rowAnnotation(
-    pvalue.TC1 = anno_simple(-log10(list.pvalue[["TC-1"]][["p.value"]]), 
-                             col = pvalue_col_fun, 
-                             pch = list.pvalue[["TC-1"]][["pch"]]),
-    pvalue.TC2 = anno_simple(-log10(list.pvalue[["TC-2"]][["p.value"]]), 
-                             col = pvalue_col_fun, 
-                             pch = list.pvalue[["TC-2"]][["pch"]]),
-    pvalue.TC3 = anno_simple(-log10(list.pvalue[["TC-3"]][["p.value"]]), 
-                             col = pvalue_col_fun, 
-                             pch = list.pvalue[["TC-3"]][["pch"]]),
-    pvalue.TC4 = anno_simple(-log10(list.pvalue[["TC-4"]][["p.value"]]), 
-                             col = pvalue_col_fun, 
-                             pch = list.pvalue[["TC-4"]][["pch"]]),
-    pvalue.TC5 = anno_simple(-log10(list.pvalue[["TC-5"]][["p.value"]]), 
-                             col = pvalue_col_fun, 
-                             pch = list.pvalue[["TC-5"]][["pch"]]),
-    pvalue.TC6 = anno_simple(-log10(list.pvalue[["TC-6"]][["p.value"]]), 
+    pval.adj.TC1 = anno_simple(-log10(list.pvalue[["TC-1"]][["p.adj"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list.pvalue[["TC-1"]][["pch"]]),
+    pval.adj.TC2 = anno_simple(-log10(list.pvalue[["TC-2"]][["p.adj"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list.pvalue[["TC-2"]][["pch"]]),
+    pval.adj.TC3 = anno_simple(-log10(list.pvalue[["TC-3"]][["p.adj"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list.pvalue[["TC-3"]][["pch"]]),
+    pval.adj.TC4 = anno_simple(-log10(list.pvalue[["TC-4"]][["p.adj"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list.pvalue[["TC-4"]][["pch"]]),
+    pval.adj.TC5 = anno_simple(-log10(list.pvalue[["TC-5"]][["p.adj"]]), 
+                           col = pvalue_col_fun, 
+                           pch = list.pvalue[["TC-5"]][["pch"]]),
+    pval.adj.TC6 = anno_simple(-log10(list.pvalue[["TC-6"]][["p.adj"]]), 
                              col = pvalue_col_fun, 
                              pch = list.pvalue[["TC-6"]][["pch"]])
     ),
@@ -221,4 +231,23 @@ png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Correlation_heatmap.pn
     units = "cm",
     res = 320)
 draw(ht)
+dev.off()
+
+# now we generate two legends, one for the p-value
+# see how we define the legend for pvalue
+lgd_pvalue = Legend(title = "p-value.adj", col_fun = pvalue_col_fun, at = c(0,-log10(0.1), -log10(0.01), -log10(0.001)), 
+                    labels = c("1","0.1", "0.01", "0.001"))
+# and one for the significant p-values
+lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.05")
+# these two self-defined legends are added to the plot by `annotation_legend_list`
+ht2 <- draw(ht, annotation_legend_list = list(lgd_pvalue, lgd_sig))
+ht2
+
+# Save heatmap as png
+png(filename = "./results/plots/Beyondcell_oct23_DrugRank/Correlation_heatmap_new.png",
+    width = 48,
+    height = 24,
+    units = "cm",
+    res = 320)
+draw(ht2)
 dev.off()
