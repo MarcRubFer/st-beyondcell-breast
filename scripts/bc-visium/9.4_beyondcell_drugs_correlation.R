@@ -117,13 +117,15 @@ stats.TCs <- lapply(seq_along(TCs), function(TC){
 
 # Merge the information of all TCs in a unique data frame
 stats.TCs.global <- do.call(rbind,stats.TCs)
+stats.TCs.global <- stats.TCs.global %>%
+  mutate(p.adj = p.adjust(p.value, method = "BH"))
+
 
 write.table(stats.TCs.global,
             file = "./results/tables/table_correlation_drugs_enrichment_global.tsv",
             sep = "\t")
 
-stats.TCs.global <- stats.TCs.global %>%
-  mutate(p.adj = p.adjust(p.value, method = "BH"))
+
 
 stats.split.list <- lapply(seq_along(TCs), function(index){
   split <- stats.TCs.global %>%
@@ -137,6 +139,9 @@ stats.split.list <- lapply(seq_along(TCs), function(index){
 stats.split.merged <- do.call(cbind,stats.split.list)
 rownames(stats.split.merged) <- top.diff
 
+write.table(stats.split.merged,
+            file = "./results/tables/table_correlation_drugs_enrichment_global.tsv",
+            sep = "\t")
 
 matrix.cor <- stats.split.merged %>%
   select(starts_with("estimate")) %>%
@@ -145,7 +150,7 @@ matrix.cor <- stats.split.merged %>%
 
 # Create annotations for p-values
 
-pvalue_col_fun = colorRamp2(c(0, -log10(0.05), -log10(0.01)), c("white", "white", "yellow")) 
+pvalue_col_fun = colorRamp2(c(0, -log10(0.05), -log10(0.01)), c("white", "white", "white")) 
 #pvalue_col_fun = colorRamp2(breaks = c(0, -log10(0.05), -log10(0.01)), 
 #                            hcl_palette = "YlOrBr")
 #                            ,
@@ -238,9 +243,9 @@ dev.off()
 lgd_pvalue = Legend(title = "p-value.adj", col_fun = pvalue_col_fun, at = c(0,-log10(0.1), -log10(0.01), -log10(0.001)), 
                     labels = c("1","0.1", "0.01", "0.001"))
 # and one for the significant p-values
-lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.05")
+lgd_sig = Legend(title = "p-value.adj", pch =  "*", type = "points", labels = "< 0.05")
 # these two self-defined legends are added to the plot by `annotation_legend_list`
-ht2 <- draw(ht, annotation_legend_list = list(lgd_pvalue, lgd_sig))
+ht2 <- draw(ht, annotation_legend_list = list(lgd_sig))
 ht2
 
 # Save heatmap as png

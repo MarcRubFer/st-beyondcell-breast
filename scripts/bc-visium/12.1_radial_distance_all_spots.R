@@ -92,6 +92,9 @@ results.df <- data.frame(
   p.value = sapply(results.cor.pearson, function(res) res$p.value)
 )
 
+results.df <- results.df %>%
+  mutate(p.adj = p.adjust(p = p.value, method = "BH"))
+
 collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
 collapsed.moas <- as.data.frame(collapsed.moas)
 rownames(collapsed.moas) <- collapsed.moas$top.diff
@@ -138,10 +141,15 @@ results.top.diff <- results.top.diff %>%
   
 results.top.diff <- right_join(y=results.top.diff, x=subset.moas, by = "top.diff")
 
+write.table(results.top.diff,
+            file = "./results/tables/table_correlation_distances_global.tsv",
+            sep = "\t")
 
 results.top.diff.filtered <- results.top.diff %>%
-  filter(p.value < 0.05) %>%
+  filter(p.adj < 0.05) %>%
   arrange(corr)
+
+
 
 correlation.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
   geom_bar(aes(fill = corr), stat = "identity") +

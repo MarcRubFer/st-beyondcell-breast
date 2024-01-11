@@ -94,6 +94,9 @@ results.df <- data.frame(
   p.value = sapply(results.cor.pearson, function(res) res$p.value)
 )
 
+results.df <- results.df %>%
+  mutate(p.adj = p.adjust(p = p.value, method = "BH"))
+
 collapsed.moas.Tumour <- read_tsv(file = "./data/tsv/top.differential.drugs.TCs.tumour.tsv")
 collapsed.moas.Tumour <- as.data.frame(collapsed.moas.Tumour)
 rownames(collapsed.moas.Tumour) <- collapsed.moas.Tumour$top.diff
@@ -110,8 +113,12 @@ results.top.diff <- results.top.diff %>%
 
 results.top.diff <- right_join(y=results.top.diff, x=subset.moas, by = "top.diff")
 
+write.table(results.top.diff,
+            file = "./results/tables/table_correlation_distances_tumourTCs.tsv",
+            sep = "\t")
+
 results.top.diff.filtered <- results.top.diff %>%
-  filter(p.value < 0.05) %>%
+  filter(p.adj < 0.05) %>%
   arrange(corr)
 
 correlation.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
