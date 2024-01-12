@@ -407,7 +407,6 @@ corr.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.d
 ggsave(filename = "corr.plot.svg",
        plot = corr.plot,
        path = "./results/plots/TC_TME_analysis/")
-
 YM155 <- bcSignatures(bc.allspots, spatial = T, mfrow = c(2,2), signatures = list(values = c("YM-155_PRISM_K76703230")))
 ggsave(filename = "YM155.svg",
        plot = YM155,
@@ -416,3 +415,58 @@ AM580 <- bcSignatures(bc.allspots, spatial = T, mfrow = c(2,2), signatures = lis
 ggsave(filename = "AM580.svg",
        plot = AM580,
        path = "./results/plots/TC_TME_analysis/")
+
+###############################################################################
+
+
+# Transposed enriched matrix
+TME.enrich.matrix <- t(bc.ranked.TME@normalized)
+
+# Vector of radial distance
+radial.dist.tumour <- semlaobj@meta.data$r_dist_TLS
+
+# Realizar la prueba de correlación de Pearson entre cada columna de datos y el vector de distancia
+TME.results.cor.pearson <- apply(TME.enrich.matrix, 2, function(col) cor.test(col, radial.dist.tumour, method = "pearson"))
+
+results.df <- data.frame(
+  corr = sapply(results.cor.pearson, function(res) res$estimate),
+  p.value = sapply(results.cor.pearson, function(res) res$p.value)
+)
+
+results.df <- results.df %>%
+  mutate(p.adj = p.adjust(p = p.value, method = "BH"))
+
+collapsed.moas <- read_tsv(file = "./data/tsv/collapsed.moas.top.differential.drugs - top.differential.drugs.tsv")
+collapsed.moas <- as.data.frame(collapsed.moas)
+rownames(collapsed.moas) <- collapsed.moas$top.diff
+
+subset.moas <- collapsed.moas %>%
+  select(top.diff, preferred.drug.names, collapsed.MoAs)
+
+top.diff <- collapsed.moas$top.diff
+
+results.top.diff <- results.df[top.diff,]
+results.top.diff <- results.top.diff %>%
+  rownames_to_column("top.diff") %>%
+  mutate(top.diff = gsub("\\.cor$", "", top.diff)) 
+
+results.top.diff <- right_join(y=results.top.diff, x=subset.moas, by = "top.diff")
+
+write.table(results.top.diff,
+            file = "./results/tables/table_correlation_distances_TME_TCs.tsv",
+            sep = "\t")
+
+results.top.diff.filtered <- results.top.diff %>%
+  filter(p.adj < 0.05) %>%
+  arrange(corr)
+
+corr.plot <- ggplot(results.top.diff.filtered, aes(x=corr, y=reorder(preferred.drug.names, corr))) +
+  geom_bar(aes(fill = corr), stat = "identity") +
+  scale_fill_gradient2(limits = c(-1,1)) +
+  xlim(-1,1) +
+  labs(fill = "Pearson's correlation") +
+  theme_minimal() + 
+  theme(panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_blank())
+
+

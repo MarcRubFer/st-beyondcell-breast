@@ -257,7 +257,7 @@ scale.myeloid = circlize::colorRamp2(seq(min_myeloid, max_myeloid, length = n.my
 # Draw Heatmap
 heatmap.drugs.TME.cancerepith <- Heatmap(
   drugs.matrix.TME2,
-  name = "bcScore",
+  name = "BCS",
   cluster_columns = FALSE,
   top_annotation = HeatmapAnnotation("TCs" = col.order.TME2$TCs_res.0.3,
                                      "Cancer Epith" = col.order.TME2$Cancer.Epithelial,
