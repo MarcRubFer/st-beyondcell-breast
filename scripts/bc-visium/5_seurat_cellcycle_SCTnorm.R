@@ -43,6 +43,7 @@ seuratobj.spotcomp <- RunPCA(seuratobj.spotcomp,
                                  npcs = 50, 
                                  features = VariableFeatures(seuratobj.spotcomp))
 
+Idents(seuratobj.spotcomp) <- "orig.ident"
 dim.pre.slide.regress <- DimPlot(seuratobj.spotcomp, pt.size = 0.5) +
   ggtitle("DimPlot without slide regression")
 
@@ -144,6 +145,12 @@ patch.cell.cycle.with <- cell.cycle.with + cell.cycle.phase.with + wrap_plots(ce
 ggsave(filename = "cell_cycle_regressed.svg", 
        plot = patch.cell.cycle.with, 
        path = "./results/plots/SCT_cellcycle/")
+
+dimplot.phase.ident <- DimPlot(seuratobj.phase, group.by = "orig.ident")
+ggsave(filename = "dimplot.phase.ident.svg", 
+       plot = dimplot.phase.ident, 
+       path = "./results/plots/SCT_cellcycle/")
+
 
 SpatialDimPlot(seuratobj.phase)
 
