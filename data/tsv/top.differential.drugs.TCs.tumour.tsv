@@ -1,0 +1,27 @@
+top.diff	drug	data.base	ID.database	preferred.drug.names	targets	main.MoAs	collapsed.MoAs
+AM-580_PRISM_K06854232	AM-580	PRISM	K06854232	AM-580	RARA	Retinoid receptor agonist	Other
+doxorubicin_PRISM_K92093830	doxorubicin	PRISM	K92093830	DOXORUBICIN	TOP2A	inhibitor of topoisomerase II	DNA replication inhibitor
+cephalomannine_PRISM_K68904758	cephalomannine	PRISM	K68904758	CEPHALOMANNINE	NA	Microtubule agent	Microtubule agent
+hesperadin_PRISM_K58122457	hesperadin	PRISM	K58122457	HESPERADIN	AURKB	Aurora kinase inhibitor	Cell cycle arrest
+10-hydroxycamptothecin_PRISM_K63784565	10-hydroxycamptothecin	PRISM	K63784565	10-HYDROXYCAMPTOTHECIN	TOP1	DNA replication inhibitor	DNA related agent
+IEM1754_PRISM_K80060353	IEM1754	PRISM	K80060353	IEM1754	GRIA1	Synapse modulation	Synapse modulation
+LJI308_GDSC_2107	LJI308	GDSC	2107	LJI308	RSK2, RSK1, RSK3	PI3K/MTOR signaling	PI3K/AKT/mTOR signaling inhibitor
+oncrasin-1_PRISM_K43449605	oncrasin-1	PRISM	K43449605	ONCRASIN-1	NA	Pro-apoptotic agent	Pro-apoptotic agent
+clonazepam_PRISM_K38183498	clonazepam	PRISM	K38183498	CLONAZEPAM	NA	Synapse modulation	Synapse modulation
+HBX-41108_CTRP_K50501969	HBX-41108	CTRP	K50501969	HBX-41108	USP7	USP inhibitor	Ubiquitin-proteasome system inhibitor
+simvastatin_CTRP_K22134346	simvastatin	CTRP	K22134346	SIMVASTATIN	HMGCR;ITGB2	HMGCR inhibitor	Statins
+SB-218078_PRISM_A06352508	SB-218078	PRISM	A06352508	SB-218078	CHEK1	Cell cycle arrest	Cell cycle arrest
+valnemulin_PRISM_K33813875	valnemulin	PRISM	K33813875	VALNEMULIN	NA	Antimicrobial agent	Other
+Lapatinib_GDSC_1558	Lapatinib	GDSC	1558	LAPATINIB	EGFR;ERBB2	ErbB inhibitor	HER2 inhibitor
+nanchangmycin_PRISM_A73871920	nanchangmycin	PRISM	A73871920	NANCHANGMYCIN	NA	Antimicrobial agent	Other
+daunorubicin_PRISM_K43389675	daunorubicin	PRISM	K43389675	DAUNORUBICIN	TOP2A;TOP2B	RNA synthesis inhibitor, topoisomerase inhibitor	DNA replication inhibitor
+BRD-K17743125-001-08-4_PRISM_K17743125	BRD-K17743125-001-08-4	PRISM	K17743125	BELINOSTAT	HDAC1;HDAC10;HDAC11;HDAC2;HDAC3;HDAC4;HDAC5;HDAC6;HDAC7;HDAC8;HDAC9	Chromatin agent	Chromatin agent
+BRD-K46386702-001-02-1_PRISM_K46386702	BRD-K46386702-001-02-1	PRISM	K46386702	ARRY-334543	ERBB2	ErbB inhibitor	HER2 inhibitor
+PFI-1_PRISM_K13094524	PFI-1	PRISM	K13094524	PFI-1	BRD4	BET inhibitor	Chromatin agent
+AZD5991_GDSC_1720	AZD5991	GDSC	1720	AZD5991	MCL1	Pro-apoptotic agent	Pro-apoptotic agent
+adarotene_PRISM_K00152668	adarotene	PRISM	K00152668	ADAROTENE	RARB;RARG	Retinoid receptor agonist	Other
+BRD-A71883111_CTRP_A71883111	BRD-A71883111	CTRP	A71883111	BRD-A71883111	IDH1	putative inhibitor of IDH1 R132H	Metabolic agent
+gossypol_PRISM_K19295594	gossypol	PRISM	K19295594	GOSSYPOL	BCL2	Pro-apoptotic agent	Pro-apoptotic agent
+pandacostat_CTRP_K44741158	pandacostat	CTRP	K44741158	PANDACOSTAT	HDAC1;HDAC2;HDAC3;HDAC6;HDAC8	inhibitor of HDAC1, HDAC2, HDAC3, HDAC6, and HDAC8	Chromatin agent
+VTP-27999_PRISM_K81694556	VTP-27999	PRISM	K81694556	VTP-27999	REN	Renin inhibitor	Other
+tretinoin:carboplatin_CTRP_M31706333	tretinoin:carboplatin	CTRP	M31706333	TRETINOIN+CARBOPLATIN	RARA;RARB;RARG	Combination drug	DNA related agent

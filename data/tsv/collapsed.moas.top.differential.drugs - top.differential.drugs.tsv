@@ -1,0 +1,83 @@
+top.diff	drug	data.base	ID.database	preferred.drug.names	targets	main.MoAs	collapsed.MoAs
+AM-580_PRISM_K06854232	AM-580	PRISM	K06854232	AM-580	RARA	Retinoid receptor agonist	Other
+doxorubicin_PRISM_K92093830	doxorubicin	PRISM	K92093830	DOXORUBICIN	TOP2A	inhibitor of topoisomerase II	DNA replication inhibitor
+proflavine-hemisulfate_PRISM_K68408467	proflavine-hemisulfate	PRISM	K68408467	PROFLAVINE-HEMISULFATE	F2	TOPICAL ANESTHETIC	Other
+BRD-K09587429_CTRP_K09587429	BRD-K09587429	CTRP	K09587429	BRD-K09587429	NA	NA	Other
+carboplatin:UNC0638_CTRP_M18136176	carboplatin:UNC0638	CTRP	M18136176	CARBOPLATIN:UNC0638 (2:1 MOL/MOL)			Combination drug
+cephalomannine_PRISM_K68904758	cephalomannine	PRISM	K68904758	CEPHALOMANNINE	NA	Microtubule agent	Microtubule agent
+BMS-387032_PRISM_K43389698	BMS-387032	PRISM	K43389698	BMS-387032	CDK2, CDK7, CDK9	CDK INHIBITOR, CELL CYCLE INHIBITOR, MCL1 INHIBITOR	Cell cycle arrest
+levonorgestrel_PRISM_K35189033	levonorgestrel	PRISM	K35189033	LEVONORGESTREL	AR;ESR1;PGR;SRD5A1	estrogen receptor agonist, glucocorticoid receptor antagonist, progesterone receptor agonist, progesterone receptor antagonist	Hormone therapy
+Dasatinib_GDSC_1079	Dasatinib	GDSC	1079	DASATINIB	EPHA2;KIT;LCK;SRC;YES1	inhibitor of SRC, YES1, EPHA2, c-KIT, and LCK	Multi-kinase inhibitor
+TAK-733_PRISM_K26667523	TAK-733	PRISM	K26667523	TAK-733	MAP2K1	MEK inhibitor	MAPK inhibitor
+GSK2636771_CTRP_K49215523	GSK2636771	CTRP	K49215523	GSK2636771	PIK3CB	inhibitor of PI3K catalytic subunit beta	PI3K/AKT/mTOR signaling inhibitor
+hesperadin_PRISM_K58122457	hesperadin	PRISM	K58122457	HESPERADIN	AURKB	Aurora kinase inhibitor	Cell cycle arrest
+fluvastatin_PRISM_K66296774	fluvastatin	PRISM	K66296774	FLUVASTATIN	HMGCR	inhibitor of HMG-CoA reductase	HMGCR inhibitor
+YM-155_PRISM_K76703230	YM-155	PRISM	K76703230	YM-155	BIRC5	inhibitor of survivin expression	Pro-apoptotic agent
+LDN-57444_PRISM_K94485812	LDN-57444	PRISM	K94485812	LDN-57444	NA	UBIQUITIN C-TERMINAL HYDROLASE INHIBITOR	Ubiquitin-proteasome system inhibitor
+fenoprofen_PRISM_A81129465	fenoprofen	PRISM	A81129465	FENOPROFEN	PTGS1;PTGS2;SLC5A8	Anti-inflammatory agent	Other
+SB-218078_PRISM_A06352508	SB-218078	PRISM	A06352508	SB-218078	CHEK1	Cell cycle arrest	Cell cycle arrest
+JIB04_PRISM_K76180386	JIB04	PRISM	K76180386	JIB04	KDM4E	Chromatin agent	Chromatin agent
+mibampator_PRISM_K42981054	mibampator	PRISM	K42981054	MIBAMPATOR	GRIA1	Synapse modulation	Synapse modulation
+Ulixertinib_GDSC_2047	Ulixertinib	GDSC	2047	ULIXERTINIB	ERK1;ERK2	ERK MAPK signaling	MAPK inhibitor
+halofuginone_PRISM_K54247840	halofuginone	PRISM	K54247840	HALOFUGINONE	COL1A1;MMP2	Collagenase inhibitor	Collagenase inhibitor
+BRD-K38332599-001-01-3_PRISM_K38332599	BRD-K38332599-001-01-3	PRISM	K38332599	UPROSERTIB	AKT1;AKT2;AKT3	PI3K/MTOR signaling	PI3K/AKT/mTOR signaling inhibitor
+BRD8958_CTRP_K68548958	BRD8958	CTRP	K68548958	BRD8958	EP300	Chromatin agent	Chromatin agent
+SCH-529074_CTRP_K24376488	SCH-529074	CTRP	K24376488	SCH-529074	TP53	activator of mutant p53	Cell cycle arrest
+EPZ5676_GDSC_1563	EPZ5676	GDSC	1563	Pinometostat	DOT1L	Chromatin histone methylation	Chromatin agent
+AST-1306_PRISM_K26838195	AST-1306	PRISM	K26838195	AST-1306	EGFR, ERBB2	ErbB inhibitor	HER2 inhibitor
+decitabine:carboplatin_CTRP_M60251345	decitabine:carboplatin	CTRP	M60251345	DECITABINE:CARBOPLATIN	DNMT1	inhibitor of DNA methyltransferase;inducer of DNA damage	Combination drug
+Vincristine_GDSC_1818	Vincristine	GDSC	1818	VINCRISTINE	TUBULIN POLYMERIZATION INHIBITOR	inhibitor of mictrotubule assembly	Microtubule agent
+bleomycin A2_CTRP_A42083487	bleomycin A2	CTRP	A42083487	BLEOMYCIN	NA	inducer of DNA damage	DNA replication inhibitor
+CZC24832_GDSC_1615	CZC24832	GDSC	1615	CZC24832	PIK3CG	PI3K INHIBITOR	PI3K/AKT/mTOR signaling inhibitor
+BRD-K75009076-001-02-1_PRISM_K75009076	BRD-K75009076-001-02-1	PRISM	K75009076	SCH-900776	CDK2, CHEK1	CHK inhibitor	Cell cycle arrest
+Lapatinib_GDSC_1558	Lapatinib	GDSC	1558	LAPATINIB	EGFR;ERBB2	ErbB inhibitor	HER2 inhibitor
+oxyquinoline_PRISM_K66808046	oxyquinoline	PRISM	K66808046	OXYQUINOLINE	METAP2	Chelating agent	Other
+colchicine_PRISM_K00259736	colchicine	PRISM	K00259736	COLCHICINE	GLRA1;GLRA2;TUBA1A;TUBA1B;TUBA1C;TUBA3C;TUBA3D;TUBA3E;TUBA4A;TUBB;TUBB1;TUBB2A;TUBB2B;TUBB3;TUBB4A;TUBB4B;TUBB6;TUBB8	microtubule inhibitor	Microtubule agent
+ML323_GDSC_1629	ML323	GDSC	1629	ML-323	USP1;UAF1	USP inhibitor	Protein synthesis and degradation inhibitor
+Mirin_GDSC_1048	Mirin	GDSC	1048	MIRIN	MRE11	DNA repair inhibitor	DNA related agent
+Docetaxel_GDSC_1819	Docetaxel	GDSC	1819	DOCETAXEL	Microtubule stabiliser	Mitosis	Microtubule agent
+AZD2014_GDSC_1441	AZD2014	GDSC	1441	AZD2014	mTORC1;mTORC2	PI3K/MTOR signaling	PI3K/AKT/mTOR signaling inhibitor
+itraconazole_CTRP_A34817987	itraconazole	CTRP	A34817987	ITRACONAZOLE	CYP51A1	Antifungal agent	Other
+VTP-27999_PRISM_K81694556	VTP-27999	PRISM	K81694556	VTP-27999	REN	Renin inhibitor	Other
+Cediranib_GDSC_1922	Cediranib	GDSC	1922	CEDIRANIB	FLT1;FLT4;KDR	inhibitor of VEGFRs	VEGFR inhibitor
+oncrasin-1_PRISM_K43449605	oncrasin-1	PRISM	K43449605	ONCRASIN-1	NA	Pro-apoptotic agent	Pro-apoptotic agent
+lomefloxacin_PRISM_A75850590	lomefloxacin	PRISM	A75850590	LOMEFLOXACIN	TOP2A	BACTERIAL DNA GYRASE INHIBITOR	DNA replication inhibitor
+ixazomib_PRISM_K78659596	ixazomib	PRISM	K78659596	IXAZOMIB	NA	proteasome inhibitor	Ubiquitin-proteasome system inhibitor
+atipamezole_PRISM_K39252998	atipamezole	PRISM	K39252998	ATIPAMEZOLE	NA	ADRENERGIC RECEPTOR ANTAGONIST	Other
+epothilone-d_PRISM_K52762805	epothilone-d	PRISM	K52762805	EPOTHILONE-D	TUBA1A;TUBA1B;TUBA1C;TUBA3C;TUBA4A;TUBA8;TUBB;TUBB1;TUBB3;TUBB4A;TUBB4B	microtubule stabilizing agent, tubulin polymerization inhibitor	Microtubule agent
+daunorubicin_PRISM_K43389675	daunorubicin	PRISM	K43389675	DAUNORUBICIN	TOP2A;TOP2B	RNA synthesis inhibitor, topoisomerase inhibitor	DNA replication inhibitor
+daporinad_CTRP_K58550667	daporinad	CTRP	K58550667	DAPORINAD	NAMPT	NAMPT inhibitor	Other
+Entospletinib_GDSC_1630	Entospletinib	GDSC	1630	ENTOSPLETINIB	SYK	SYK inhibitor	SYK inhibitor
+IEM1754_PRISM_K80060353	IEM1754	PRISM	K80060353	IEM1754	GRIA1	Synapse modulation	Synapse modulation
+LJI308_GDSC_2107	LJI308	GDSC	2107	LJI308	RSK2, RSK1, RSK3	PI3K/MTOR signaling	PI3K/AKT/mTOR signaling inhibitor
+oxyphencyclimine_PRISM_A58193911	oxyphencyclimine	PRISM	A58193911	OXYPHENCYCLIMINE	CHRM1;CHRM2;CHRM3	Synapse modulation	Other
+JQ-1:UNC0638_CTRP_M56714493	JQ-1:UNC0638	CTRP	M56714493	JQ-1:UNC0638	BRDTEHMT1;EHMT2	Combination drug	Combination drug
+BRD-K17743125-001-08-4_PRISM_K17743125	BRD-K17743125-001-08-4	PRISM	K17743125	BELINOSTAT	HDAC1;HDAC10;HDAC11;HDAC2;HDAC3;HDAC4;HDAC5;HDAC6;HDAC7;HDAC8;HDAC9	Chromatin agent	Chromatin agent
+cytochalasin-b_PRISM_K47000838	cytochalasin-b	PRISM	K47000838	CYTOCHALASIN-B	ACTB	Microtubule Inhibitor	Microtubule agent
+decitabine_CTRP_K79254416	decitabine	CTRP	K79254416	DECITABINE	DNMT1;DNMT3A	DNA methyltransferase inhibitor	Chromatin agent
+HBX-41108_CTRP_K50501969	HBX-41108	CTRP	K50501969	HBX-41108	USP7	USP inhibitor	Ubiquitin-proteasome system inhibitor
+sirolimus_CTRP_K84937637	sirolimus	CTRP	K84937637	SIROLIMUS	MTOR	inhibitor of mTOR	PI3K/AKT/mTOR signaling inhibitor
+COL-3_CTRP_A59431241	COL-3	CTRP	A59431241	COL-3	NA	Proteolysis inhibitor	Proteolysis inhibitor
+PF-4800567 hydrochloride_CTRP_K43428468	PF-4800567 hydrochloride	CTRP	K43428468	PF-4800567	CSNK1D;CSNK1E	Casein kinase inhibitor	Other
+ML083_CTRP_K44241590	ML083	CTRP	K44241590	ML083	PKM	Activator of muscle pyruvate kinase	Other
+nanchangmycin_PRISM_A73871920	nanchangmycin	PRISM	A73871920	NANCHANGMYCIN	NA	Antimicrobial agent	Other
+gossypol_PRISM_K19295594	gossypol	PRISM	K19295594	GOSSYPOL	BCL2	Pro-apoptotic agent	Pro-apoptotic agent
+PRIMA-1_CTRP_K15318909	PRIMA-1	CTRP	K15318909	PRIMA-1	TP53	re-activator of the pro-apoptotic activity of mutant p53	p53 activator/MDM2 inhibitor
+GMX-1778_CTRP_K47335880	GMX-1778	CTRP	K47335880	GMX-1778	NAMPT	NAMPT inhibitor	Other
+SKI-II_CTRP_K20755323	SKI-II	CTRP	K20755323	SKI-II	SPHK1	Sphingosine kinase inhibitor	Lipid metabolism inhibitor
+tyrphostin-AG-99_PRISM_K60184833	tyrphostin-AG-99	PRISM	K60184833	TYRPHOSTIN-AG-99	EGFR	ErbB inhibitor	HER2 inhibitor
+BRD-K29313308_CTRP_K29313308	BRD-K29313308	CTRP	K29313308	BRD-K29313308	NA	Unknown	Other
+adarotene_PRISM_K00152668	adarotene	PRISM	K00152668	ADAROTENE	RARB;RARG	Retinoid receptor agonist	Other
+BRD-K23228615-001-02-8_PRISM_K23228615	BRD-K23228615-001-02-8	PRISM	K23228615	GDC-0980	FGR;MAP3K9;MTOR;PIK3CA;PIK3CB;PIK3CD;PIK3CG;SYK	PI3K/AKT/mTOR signaling inhibitor	PI3K/AKT/mTOR signaling inhibitor
+phenylbutazone_PRISM_K10843433	phenylbutazone	PRISM	K10843433	PHENYLBUTAZONE	PTGIS;PTGS1;PTGS2	Anti-inflammatory agent	Other
+deflazacort_PRISM_K96006502	deflazacort	PRISM	K96006502	DEFLAZACORT	NR3C1	Glucocorticoid receptor agonist	Other
+LE-135_PRISM_K06593056	LE-135	PRISM	K06593056	LE-135	RARB	Retinoid receptor agonist	Other
+Compound 7d-cis_CTRP_K61829047	Compound 7d-cis	CTRP	K61829047	COMPOUND 7D-CIS	XPO1	Nucleocytoplasmic transport inhibitor	Nucleocytoplasmic transport inhibitor
+importazole_CTRP_A02481876	importazole	CTRP	A02481876	IMPORTAZOLE	KPNB1	Nucleocytoplasmic transport inhibitor	Nucleocytoplasmic transport inhibitor
+7-hydroxystaurosporine_PRISM_K45293975	7-hydroxystaurosporine	PRISM	K45293975	7-HYDROXYSTAUROSPORINE	CHEK1;MARK3;PDPK1	Cell cycle arrest	Cell cycle arrest
+navarixin_PRISM_K82850175	navarixin	PRISM	K82850175	NAVARIXIN	CXCR1;CXCR2	Chemokine receptor inhibitor	Chemokine receptor inhibitor
+PLX-4032_CTRP_K56343971	PLX-4032	CTRP	K56343971	PLX-4032	BRAF	RAF inhibitor	BRAF inhibitor
+ciclosporin_CTRP_A38030642	ciclosporin	CTRP	A38030642	CICLOSPORIN	PPID	inhibitor of calcineurin by binding to cyclophilin D	Immunosuppressive agent
+afatinib_PRISM_K66175015	afatinib	PRISM	K66175015	AFATINIB	EGFR;ERBB2;ERBB4	ErbB inhibitor	HER2 inhibitor
+LGK974_GDSC_1598	LGK974	GDSC	1598	LGK974	PORCN inhibitor	WNT signaling inhibitor	Other
+R406_PRISM_K20285085	R406	PRISM	K20285085	R406	RET;SYK	SYK inhibitor	SYK inhibitor

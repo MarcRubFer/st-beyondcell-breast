@@ -1,0 +1,27 @@
+top.diff	drug	data.base	ID.database	preferred.drug.names	targets	main.MoAs	collapsed.MoAs
+JQ-1:UNC0638_CTRP_M56714493	JQ-1:UNC0638	CTRP	M56714493	JQ-1:UNC0638	BRDTEHMT1;EHMT2	Combination drug	Combination drug
+Staurosporine_GDSC_1034	Staurosporine	GDSC	1034	STAUROSPORINE		Broad spectrum kinase inhibitor	Kinase inhibitor
+BPD-00008900_GDSC_1998	BPD-00008900	GDSC	1998	BPD-00008900	NA	NA	Other
+Buparlisib_GDSC_1873	Buparlisib	GDSC	1873	BUPARLISIB	PIK3CA, PIK3CG	 PI3K INHIBITOR	PI3K/AKT/mTOR signaling inhibitor
+KU-55933_GDSC_1030	KU-55933	GDSC	1030	KU-55933	ATM, PRKDC	ATM KINASE INHIBITOR	Kinase inhibitor
+BMS-536924_GDSC_1091	BMS-536924	GDSC	1091	BMS-536924	AKT1, CCNE1, CDK2, CYP3A4, ERBB2, IGF1R, KDR, LCK, MAPK1, MET, PDGFRA, PDGFRB	IGF-1 INHIBITOR	Kinase inhibitor
+emetine_PRISM_A25687296	emetine	PRISM	A25687296	EMETINE	RPS2	PROTEIN SYNTHESIS INHIBITOR	Protein synthesis and degradation inhibitor
+NU7441_GDSC_1038	NU7441	GDSC	1038	KU-57788	DNAPK	Genome integrity	DNA related agent
+AZD1332_GDSC_1463	AZD1332	GDSC	1463	AZD1332	NTRK1, NTRK2, NTRK3	RTK signaling	Kinase inhibitor
+importazole_CTRP_A02481876	importazole	CTRP	A02481876	IMPORTAZOLE	KPNB1	Nucleocytoplasmic transport inhibitor	Nucleocytoplasmic transport inhibitor
+AZD6738_GDSC_1917	AZD6738	GDSC	1917	AZD6738	ATR	ATR KINASE INHIBITOR	Kinase inhibitor
+BDP-00009066_GDSC_1866	BDP-00009066	GDSC	1866	BDP-00009066	MRCKB_HUMAN	Cytoskeleton	Microtubule agent
+BRD-K90370028_CTRP_K90370028	BRD-K90370028	CTRP	K90370028	BRD-K90370028	NA	Unknown	Other
+VE821_GDSC_2111	VE821	GDSC	2111	VE821	inhibitor of serine/threonine-protein kinase ATR	DNA damage response inhibitor	DNA related agent
+fluvastatin_PRISM_K66296774	fluvastatin	PRISM	K66296774	FLUVASTATIN	HMGCR	inhibitor of HMG-CoA reductase	HMGCR inhibitor
+O-6-benzylguanine_CTRP_K92041145	O-6-benzylguanine	CTRP	K92041145	O6-BENZYLGUANINE	MGMT	DNA damage response inhibitor	DNA related agent
+GSK525762A_CTRP_K08109215	GSK525762A	CTRP	K08109215	GSK525762A	BRD2;BRD3;BRD4	BET inhibitor	Transcription inhibitor
+YM-155_PRISM_K76703230	YM-155	PRISM	K76703230	YM-155	BIRC5	inhibitor of survivin expression	Pro-apoptotic agent
+fluorouracil_CTRP_K24844714	fluorouracil	CTRP	K24844714	5-FLUOROURACIL	DPYD, TYMS	THYMIDYLATE SYNTHASE INHIBITOR	DNA related agent
+KP-1212_PRISM_K46690591	KP-1212	PRISM	K46690591	KP-1212	NA	Antimicrobial agent	Other
+CAY10618_CTRP_K83289131	CAY10618	CTRP	K83289131	GPP-78	NAMPT	NAMPT Inhibitor (attenuation of glycolysis)	Metabolic agent
+peruvoside_PRISM_A72716251	peruvoside	PRISM	A72716251	PERUVOSIDE			Cardenolide
+piperlongumine:MST-312_CTRP_M37545453	piperlongumine:MST-312	CTRP	M37545453	PIPERLONGUMINE:MST-312	NA	Combination drug	Combination drug
+SR-II-138A_CTRP_K11172604	SR-II-138A	CTRP	K11172604	SR-II-138A	EIF4A2;EIF4E;EIF4G1	Transcription inhibitor	Transcription inhibitor
+PI-103_CTRP_K67868012	PI-103	CTRP	K67868012	PI-103	PI3K/AKT/mTOR signaling inhibitor	PI3K/AKT/mTOR signaling inhibitor	PI3K/AKT/mTOR signaling inhibitor
+sunitinib_CTRP_K42828737	sunitinib	CTRP	K42828737	sunitinib	VEGFR, c-KIT and PDGFR inhibitor	Kinase inhibitor	Kinase inhibitor
