@@ -8,11 +8,24 @@
 st-beyondcell-breast.Rproj
 
 # Project directories and files
-data/
+data/*.rtf
+data/*.tsv
+data/dea_tables/Previous
+data/images_copy
+data/reference
+data/section1
+data/section2
+data/tsv/*
+data/tsv/TSV_prenewSCT
+!data/tsv/collapsed.moas*
+!data/tsv/selected*
+!data/tsv/top*
+
 results/
 results/analysis
 results/ggplots
 results/filtering
 results/plots
+
 scripts/__pycache__
 scripts/prev_scripts
