@@ -16,7 +16,7 @@ Breast cancer datasets were obtained from 10X genomics examples website (registr
 
 ## Packages and versions
 
-It is recommended to use conda enviroments located in envs directory
+It is recommended to use conda/mamba enviroments located in envs directory
 
 - R: version 4.3.1
 - RStudio: version 2022.07.1 Build 554
@@ -29,3 +29,21 @@ It is recommended to use conda enviroments located in envs directory
 - fgsea: version 1.26.0
 - ComplexHeatmap: 2.16.0
 - Beyondcell: version 2.2.0
+
+Some packages requiere devtools/remote installation:
+
+To install spacexr package:
+
+```
+mamba install conda-forge::r-devtools
+mamba install conda-forge::r-rfast
+mamba install conda-forge::r-rcppgsl
+mamba install conda-forge::r-rcppziggurat
+```
+
+In R terminal
+
+```
+options(timeout = 600000000) ### set this to avoid timeout error
+devtools::install_github("dmcable/spacexr", build_vignettes = FALSE)
+```
