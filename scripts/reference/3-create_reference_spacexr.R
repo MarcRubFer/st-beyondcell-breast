@@ -2,7 +2,7 @@
 # https://raw.githack.com/dmcable/spacexr/master/vignettes/visium_full_regions.html
 # https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html
 
-# conda activate spacexr
+# conda activate beyondcell2_spacexr
 
 out.dir <- "./results"
 dir.create(path = out.dir, recursive = TRUE)
@@ -118,11 +118,6 @@ ggsave(filename = "reference.ncells_by_patients_wrap_2.svg",
 ggsave(filename = "reference.ncells_by_patients_wrap_2.pdf", 
        plot = ncells_patients_wrap.2, 
        path = paste0(out.dir,"/plots/reference"))
-
-
-pdf(file = "./results/plots/reference/reference.ncells_by_patients_wrap_2.pdf")
-ncells_patients_wrap.2
-dev.off()
 
 dir.create(path = paste0(out.dir,"/ggplots/reference"), recursive = TRUE)
 all.plots <- list(ncells_patients, ncells_patients_wrap, ncells_patients_wrap.2)

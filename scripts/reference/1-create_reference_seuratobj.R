@@ -1,4 +1,4 @@
-# conda activate spacexr
+# conda activate beyondcell2_spacexr
 rm(list = ls())
 
 library("Seurat")
