@@ -71,6 +71,13 @@ cell.prop.normalized <- cell.prop.normalized %>%
   mutate(Cell.Type = case_when(`Cancer Epithelial` > 0.65 ~ "Tumour", CAFs > 0.20 ~ "CAFs", TRUE ~ "Others"))
 head(cell.prop.normalized)
 
+colnames(cell.prop.normalized) <- gsub(pattern = "-",
+                                       replacement = ".",
+                                       x = colnames(cell.prop.normalized))
+colnames(cell.prop.normalized) <- gsub(pattern = " ",
+                                       replacement = ".",
+                                       x = colnames(cell.prop.normalized))
+head(cell.prop.normalized)
 # Add Metadata to seurat object
 seuratobj.deconvoluted <- AddMetaData(seuratobj.filtered, 
                                       metadata = cell.prop.normalized)
