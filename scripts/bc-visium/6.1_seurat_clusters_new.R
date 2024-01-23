@@ -1,3 +1,5 @@
+# conda activate beyondcell2_EC
+
 rm(list = ls())
 
 library("Seurat")
